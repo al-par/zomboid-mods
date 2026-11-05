@@ -1,0 +1,87 @@
+module Base
+{
+    craftRecipe SLS_BreakSaltLick
+    {
+        timedAction = CrushLimestone,
+        time = 100,
+        Tags = AnySurfaceCraft;CanBeDoneInDark,
+        category = Cooking,
+        inputs
+        {
+            item 1 tags[base:hammer;base:sledgehammer;base:clubhammer;base:hammerstone] mode:keep flags[Prop1;MayDegradeLight],
+            item 1 [Base.SLS_SaltLick],
+        }
+        outputs
+        {
+            item 1 Base.SLS_DirtySaltChunk,
+        }
+    }
+
+    craftRecipe SLS_MakeBrine
+    {
+        timedAction = MixingBowl,
+        time = 60,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        inputs
+        {
+            item 1 [Base.Pot;Base.PotForged] mode:destroy flags[InheritCondition;ItemCount] mappers[potType],
+            -fluid 1.5 categories[Water] mode:mixture,
+            item 1 [Base.SLS_DirtySaltChunk],
+        }
+        outputs
+        {
+            item 1 mapper:potType,
+        }
+        itemMapper potType
+        {
+            Base.SLS_PotOfBrine = Base.Pot,
+            Base.SLS_PotForgedOfBrine = Base.PotForged,
+        }
+    }
+
+    craftRecipe SLS_PourOutBrine
+    {
+        timedAction = EmptyPan,
+        time = 40,
+        Tags = InHandCraft;Cooking,
+        category = Cooking,
+        inputs
+        {
+            item 1 [Base.SLS_PotOfBrine;Base.SLS_PotForgedOfBrine] flags[ItemCount] mappers[potType],
+        }
+        outputs
+        {
+            item 1 mapper:potType,
+        }
+        itemMapper potType
+        {
+            Base.Pot = Base.SLS_PotOfBrine,
+            Base.PotForged = Base.SLS_PotForgedOfBrine,
+        }
+    }
+
+    craftRecipe SLS_ScrapeSaltFromPot
+    {
+        timedAction = Making,
+        time = 60,
+        Tags = InHandCraft;Cooking,
+        category = Cooking,
+        xpAward = Cooking:3,
+        inputs
+        {
+            item 1 tags[base:mixingutensil;base:spoon;base:fork;base:dullknife;base:sharpknife;base:meatcleaver] mode:keep flags[MayDegradeVeryLight],
+            item 1 [Base.SLS_PotOfSalt;Base.SLS_PotForgedOfSalt] flags[ItemCount] mappers[potType],
+        }
+        outputs
+        {
+            item 1 Base.Salt,
+            item 1 mapper:potType,
+        }
+        itemMapper potType
+        {
+            Base.Pot = Base.SLS_PotOfSalt,
+            Base.PotForged = Base.SLS_PotForgedOfSalt,
+        }
+    }
+}
