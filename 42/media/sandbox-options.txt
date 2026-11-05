@@ -1,0 +1,177 @@
+VERSION = 1,
+
+option HealthWarningsFull.SickEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_SickEnabled,
+}
+
+option HealthWarningsFull.SickPause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_SickPause,
+}
+
+option HealthWarningsFull.FeverEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_FeverEnabled,
+}
+
+option HealthWarningsFull.FeverPause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_FeverPause,
+}
+
+option HealthWarningsFull.TemperatureEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_TemperatureEnabled,
+}
+
+option HealthWarningsFull.TemperaturePause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_TemperaturePause,
+}
+
+option HealthWarningsFull.CriticalInjuryEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_CriticalInjuryEnabled,
+}
+
+option HealthWarningsFull.CriticalInjuryPause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_CriticalInjuryPause,
+}
+
+option HealthWarningsFull.LodgedBulletEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_LodgedBulletEnabled,
+}
+
+option HealthWarningsFull.LodgedBulletPause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarningsFull,
+	translation = HWF_LodgedBulletPause,
+}
+
+option HealthWarningsFull.FoodPoisoningEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_FoodPoisoningEnabled,
+}
+
+option HealthWarningsFull.FoodPoisoningPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_FoodPoisoningPause,
+}
+
+option HealthWarningsFull.PoisoningEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_PoisoningEnabled,
+}
+
+option HealthWarningsFull.PoisoningPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_PoisoningPause,
+}
+
+option HealthWarningsFull.LodgedGlassEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_LodgedGlassEnabled,
+}
+
+option HealthWarningsFull.LodgedGlassPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_LodgedGlassPause,
+}
+
+option HealthWarningsFull.BurnsEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_BurnsEnabled,
+}
+
+option HealthWarningsFull.BurnsPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_BurnsPause,
+}
+
+option HealthWarningsFull.StarvationEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_StarvationEnabled,
+}
+
+option HealthWarningsFull.StarvationPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_StarvationPause,
+}
+
+option HealthWarningsFull.DehydrationEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_DehydrationEnabled,
+}
+
+option HealthWarningsFull.DehydrationPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarningsFull,
+	translation = HWF_DehydrationPause,
+}

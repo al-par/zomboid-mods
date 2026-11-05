@@ -1,0 +1,4 @@
+name=Health Warnings - Full
+id=HealthWarningsFull
+description=Shows detailed popup alerts with context and mitigations for dangerous conditions. Optionally pauses the game per trigger.
+modversion=1.0
