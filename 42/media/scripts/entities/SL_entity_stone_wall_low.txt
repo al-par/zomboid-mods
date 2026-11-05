@@ -1,0 +1,56 @@
+module Base
+{
+    xuiSkin default
+    {
+        entity ES_SL_StoneWallLow
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Stone Wall (Short),
+            Icon = Build_SL_StoneWallLow,
+        }
+    }
+
+    entity SL_StoneWallLow
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_SL_StoneWallLow,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            skillBaseHealth = 200,
+            face W
+            {
+                layer
+                {
+                    row = sensiblelivestock_walls_01_0,
+                }
+            }
+            face N
+            {
+                layer
+                {
+                    row = sensiblelivestock_walls_01_1,
+                }
+            }
+            corner = sensiblelivestock_walls_01_3,
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 150,
+            category = Masonry,
+            SkillRequired = Masonry:2,
+            xpAward = Masonry:15,
+            Tooltip = Tooltip_craft_SL_stoneWallLowDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 1 tags[base:concrete] flags[DontRecordInput],
+                item 3 [Base.StoneBlock],
+            }
+        }
+    }
+}
