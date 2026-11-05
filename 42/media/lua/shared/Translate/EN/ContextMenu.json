@@ -1,0 +1,10 @@
+{
+    "ContextMenu_PGP_LinkToPool": "Link to Generator Pool",
+    "ContextMenu_PGP_PlumbGenerator": "Plumb Fuel Line",
+    "ContextMenu_PGP_LayCable": "Lay Extension Cable",
+    "ContextMenu_PGP_PickUpCable": "Pick Up Extension Cable",
+    "ContextMenu_PGP_PickUpBarrel": "Pick Up %1",
+    "ContextMenu_PGP_PutDownBarrel": "Put Down %1",
+    "ContextMenu_PGP_FillBarrelFromPump": "Fill %1 from Pump",
+    "ContextMenu_PGP_LoadBarrelInto": "Load Barrel into %1"
+}

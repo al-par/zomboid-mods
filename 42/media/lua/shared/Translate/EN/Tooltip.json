@@ -1,0 +1,23 @@
+{
+    "Tooltip_PGP_LinkDesc": "Wire this generator into the pool it is touching. It shares the pool's load, and once plumbed its 3x3 fuel area joins the pool's.",
+    "Tooltip_PGP_LinkNeeds": "Needs: Electric Wire, Electronics Scrap",
+    "Tooltip_PGP_PlumbDesc": "Feeds the generator from petrol barrels on the floor directly above it, in a 3x3 area, like a plumbed sink.",
+    "Tooltip_PGP_NeedWrench": "Requires a pipe wrench.",
+    "Tooltip_PGP_Invalid": "This generator can't be used right now.",
+    "Tooltip_PGP_AlreadyConnected": "Already connected. Disconnect it first to link it to a pool.",
+    "Tooltip_PGP_AlreadyPooled": "Already part of a generator pool.",
+    "Tooltip_PGP_NotTouching": "Must touch a generator that is already connected or linked (diagonals count).",
+    "Tooltip_PGP_TooClose": "Too close to another generator pool: its 3x3 fuel area would overlap that pool's.",
+    "Tooltip_PGP_CableHere": "There is already an extension cable here.",
+    "Tooltip_PGP_GeneratorHere": "A generator is in the way.",
+    "Tooltip_PGP_CableNotConnected": "Must connect to a pooled generator, or to a cable leading to one.",
+    "Tooltip_PGP_CableTwoPools": "This would join two different generator pools.",
+    "Tooltip_PGP_CableLimit": "This pool has reached its extension cable limit.",
+    "Tooltip_PGP_NoPump": "No fuel pump within reach.",
+    "Tooltip_PGP_BarrelFull": "The barrel is full.",
+    "Tooltip_PGP_BarrelOtherFluid": "The barrel holds something other than petrol.",
+    "Tooltip_PGP_NotTrunk": "Barrels only go in vehicle trunks and truck beds.",
+    "Tooltip_PGP_TrunkTooSmall": "The trunk is too small for a barrel (needs capacity over 100).",
+    "Tooltip_PGP_TrunkNotEmpty": "The trunk must be empty to fit a barrel.",
+    "Tooltip_PGP_TrunkClosed": "The trunk is closed or locked."
+}

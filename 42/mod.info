@@ -1,0 +1,7 @@
+name=Pooled Generator Power
+id=PooledGeneratorPower
+description=Plumb generators to petrol barrels like a sink, link touching generators into a shared fuel pool, split building load evenly between pools, and stretch a pool's power range with makeshift extension cables. Vanilla draw and consumption rates.
+pack=PooledGeneratorPower
+tiledef=PooledGeneratorPower 6143
+modversion=1.0.0
+versionMin=42.0.0

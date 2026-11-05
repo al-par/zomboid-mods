@@ -1,0 +1,12 @@
+{
+    "IGUI_PGP_Plumbed": "Fuel line: plumbed",
+    "IGUI_PGP_NotPlumbed": "Fuel line: not plumbed",
+    "IGUI_PGP_NoPool": "Not part of a generator pool",
+    "IGUI_PGP_Pool": "Generator pool: %1 generators, %2 running",
+    "IGUI_PGP_Range": "Power range: %1 tiles (%2 extension cables)",
+    "IGUI_PGP_PoolLoad": "Pool load share: %1 L/h",
+    "IGUI_PGP_Barrels": "Petrol in pool barrels: %1 L",
+    "IGUI_PGP_BarrelContents": "%1 L %2",
+    "IGUI_PGP_BarrelNamed": "%1 (%2)",
+    "IGUI_PGP_NoRoomForBarrel": "No room to put the barrel down"
+}

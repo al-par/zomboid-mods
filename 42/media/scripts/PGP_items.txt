@@ -1,0 +1,52 @@
+module Base
+{
+    item PGP_ExtensionCable
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.6,
+        Icon = PGP_ExtensionCable,
+        MetalValue = 4.0,
+        Tags = base:hasmetal,
+    }
+
+    item PGP_Barrel_Orange
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:normal,
+        Weight = 20.0,
+        Icon = Drum_Orange,
+        RequiresEquippedBothHands = true,
+        Tags = base:heavyitem,
+    }
+
+    item PGP_Barrel_LightGreen
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:normal,
+        Weight = 20.0,
+        Icon = Drum_Olive,
+        RequiresEquippedBothHands = true,
+        Tags = base:heavyitem,
+    }
+
+    item PGP_Barrel_DarkGreen
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:normal,
+        Weight = 20.0,
+        Icon = Drum_Green,
+        RequiresEquippedBothHands = true,
+        Tags = base:heavyitem,
+    }
+
+    item PGP_Barrel_MetalDrum
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:normal,
+        Weight = 20.0,
+        Icon = Drum_Grey,
+        RequiresEquippedBothHands = true,
+        Tags = base:heavyitem,
+    }
+}

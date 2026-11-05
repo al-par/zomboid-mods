@@ -1,0 +1,7 @@
+{
+    "Sandbox_PooledGeneratorPower": "Pooled Generator Power",
+    "Sandbox_PooledGeneratorPower_TilesPerCable": "Range Per Extension Cable",
+    "Sandbox_PooledGeneratorPower_TilesPerCable_tooltip": "Tiles of power range a generator pool gains for each connected extension cable.",
+    "Sandbox_PooledGeneratorPower_MaxCablesPerPool": "Max Extension Cables Per Pool",
+    "Sandbox_PooledGeneratorPower_MaxCablesPerPool_tooltip": "Extension cables beyond this count add no range. 0 means no limit."
+}
