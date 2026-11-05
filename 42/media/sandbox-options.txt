@@ -1,0 +1,12 @@
+VERSION = 1,
+
+option WalkThroughPoles.BreakSpeed
+{
+	type = integer,
+	min = 1,
+	max = 200,
+	default = 30,
+
+	page = WalkThroughPoles,
+	translation = WTP_BreakSpeed,
+}
