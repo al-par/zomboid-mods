@@ -1,0 +1,4 @@
+name=Ambient Cold Storage
+id=AmbientColdStorage
+description=Food left outside (on the ground or in outdoor containers) follows the outdoor air temperature: cold weather refrigerates it, sub-zero weather freezes it. Food in powered freezers does not spoil. Singleplayer. Replaces Outside Freezer and No Spoiling in Freezers.
+modversion=1.0
