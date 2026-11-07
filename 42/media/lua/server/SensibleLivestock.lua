@@ -8,13 +8,18 @@
 -- mirrored in mod data so a buffer that gets saved (chunk unload, server save, crash) is repaired
 -- when the square loads again.
 --
--- Single player updates every tick. A server (dedicated or co-op host) gets no tick event in Lua,
--- so it updates every game minute; shields go up well before an animal is stressed enough to ram.
+-- Single player updates ten times a real second, and moves stumbling animals every tick so the
+-- motion stays smooth. A server (dedicated or co-op host) updates every game minute to keep its
+-- cost low; shields go up well before an animal is stressed enough to ram.
 
 if isClient() then return end
 
 local MODULE = "SensibleLivestock"
 local MOD_KEY = "SL_realHealth"
+local SERVER = isServer()
+
+local UPDATE_INTERVAL_MS = 100
+local RESCAN_UPDATES = 10               -- a resting agitated animal's surroundings are rescanned about once a second
 
 local BUFFER = 100000
 local SCAN_RADIUS = 2
@@ -77,7 +82,14 @@ local lastStress = {}   -- animal -> stress at the previous update
 local wasJogging = {}   -- player -> true if jogging at the previous update
 local wasSprinting = {} -- player -> true if sprinting at the previous update
 local rammers = {}      -- tame animals that may have just rammed, refreshed every update
+local scans = {}        -- animal -> { x, y, z, update, hours } of the last shield scan around it
+local stumbleCount = 0
+local updateCount = 0
+local currentAnimals = {}
+local currentZombies    -- zombies near currentAnimals, gathered on first use in an update
 local lastUpdateMs
+local nextUpdateMs = 0
+local pendingUnits = 0
 
 -- Options -------------------------------------------------------------------
 
@@ -117,7 +129,7 @@ end
 
 local function players()
     local list = {}
-    if isServer() then
+    if SERVER then
         local online = getOnlinePlayers()
         for i = 0, online:size() - 1 do list[#list + 1] = online:get(i) end
     else
@@ -365,6 +377,14 @@ local function breakFree(animal, obj, leader)
     local route = escapeRoute(animal, obj, leader)
     if route then
         stumbles[animal] = { route = route, step = 1, obj = obj, leader = leader, waited = 0 }
+        stumbleCount = stumbleCount + 1
+    end
+end
+
+local function endStumble(animal)
+    if stumbles[animal] then
+        stumbles[animal] = nil
+        stumbleCount = stumbleCount - 1
     end
 end
 
@@ -401,7 +421,7 @@ local function updateStumbles(units)
             end
         end
     end
-    for i = 1, #done do stumbles[done[i]] = nil end
+    for i = 1, #done do endStumble(done[i]) end
 end
 
 local function noteRams(animal, obj, perHit, hits)
@@ -464,7 +484,7 @@ local function smash(obj)
     local square = obj:getSquare()
     local sound = instanceof(obj, "IsoThumpable") and obj:getBreakSound() or nil
     if sound then
-        if isServer() then
+        if SERVER then
             sendServerCommand(MODULE, "breakSound", { x = square:getX(), y = square:getY(), z = square:getZ(), sound = sound })
         else
             square:playSound(sound)
@@ -504,9 +524,22 @@ local function settle(obj, entry)
     obj:setHealth(math.floor(entry.real) + BUFFER)
 end
 
+-- Shields last SHIELD_HOURS, so an animal that hasn't left its square only needs a rescan to
+-- refresh them and to catch objects built next to it since the last scan.
 local function shieldAround(animal, hours)
-    local cell = getCell()
     local x, y, z = math.floor(animal:getX()), math.floor(animal:getY()), math.floor(animal:getZ())
+    local scan = scans[animal]
+    if scan and not SERVER and scan.x == x and scan.y == y and scan.z == z
+            and updateCount - scan.update < RESCAN_UPDATES and hours - scan.hours < SHIELD_HOURS / 2 then
+        return
+    end
+    if not scan then
+        scan = {}
+        scans[animal] = scan
+    end
+    scan.x, scan.y, scan.z, scan.update, scan.hours = x, y, z, updateCount, hours
+
+    local cell = getCell()
     for sx = x - SCAN_RADIUS, x + SCAN_RADIUS do
         for sy = y - SCAN_RADIUS, y + SCAN_RADIUS do
             local square = cell:getGridSquare(sx, sy, z)
@@ -549,8 +582,7 @@ end
 -- Small stress gains are undone while every jogger and zombie nearby is harmless (out of sight, or
 -- a trusted jogger). Sprinting is a commotion heard through walls and always adds stress.
 
-local function elapsedUnits()
-    if not isServer() then return getGameTime():getMultiplier() end
+local function serverUnits()
     local now = getTimestampMs()
     local seconds = lastUpdateMs and math.min((now - lastUpdateMs) / 1000, MAX_SERVER_GAP_SECONDS) or 0
     lastUpdateMs = now
@@ -588,17 +620,26 @@ local function zombiesNear(animals)
         minX, maxX = math.min(minX, x), math.max(maxX, x)
         minY, maxY = math.min(minY, y), math.max(maxY, y)
     end
+    minX, maxX = minX - SPOT_RADIUS, maxX + SPOT_RADIUS
+    minY, maxY = minY - SPOT_RADIUS, maxY + SPOT_RADIUS
     local zombies = getCell():getZombieList()
     for i = 0, zombies:size() - 1 do
         local z = zombies:get(i)
-        local x, y = z:getX(), z:getY()
-        if not z:isDead()
-                and x >= minX - SPOT_RADIUS and x <= maxX + SPOT_RADIUS
-                and y >= minY - SPOT_RADIUS and y <= maxY + SPOT_RADIUS then
-            result[#result + 1] = z
+        local x = z:getX()
+        if x >= minX and x <= maxX then
+            local y = z:getY()
+            if y >= minY and y <= maxY and not z:isDead() then
+                result[#result + 1] = z
+            end
         end
     end
     return result
+end
+
+-- Only animals whose stress just crept up, or that are bolting, look at zombies.
+local function nearbyZombies()
+    if not currentZombies then currentZombies = zombiesNear(currentAnimals) end
+    return currentZombies
 end
 
 local function isHarmlessJogger(animal, p)
@@ -611,7 +652,7 @@ local function isHiddenZombie(animal, z)
     return option("HiddenZombies", true) and not animal:CanSee(z)
 end
 
-local function calm(animal, stress, joggers, zombies, cap)
+local function calm(animal, stress, joggers, cap)
     local before = lastStress[animal]
     if not before or stress <= before or stress - before > cap then return stress end
 
@@ -622,6 +663,7 @@ local function calm(animal, stress, joggers, zombies, cap)
             excused = true
         end
     end
+    local zombies = nearbyZombies()
     for i = 1, #zombies do
         if within(animal, zombies[i], SPOT_RADIUS) then
             if not isHiddenZombie(animal, zombies[i]) then return stress end
@@ -643,11 +685,12 @@ end
 
 -- Vanilla makes the animal bolt (with a stressed call) from any zombie within 6 tiles. Stop the
 -- bolt when every zombie that close is out of sight and nothing else nearby is visible to flee from.
-local function cancelPhantomFlee(animal, zombies, people)
+local function cancelPhantomFlee(animal, people)
     if not option("HiddenZombies", true) then return end
     if not animal:getVariableBoolean("animalRunning") then return end
     if animal:isAnimalAttacking() or animal:getAttackedBy() then return end
 
+    local zombies = nearbyZombies()
     local hiddenClose = false
     for i = 1, #zombies do
         local z = zombies[i]
@@ -666,9 +709,9 @@ end
 
 -- Events --------------------------------------------------------------------
 
-local function update()
+local function update(units, moveStumbles)
+    updateCount = updateCount + 1
     local hours = worldHours()
-    local units = elapsedUnits()
 
     local list = getCell():getAnimals()
     local animals = {}
@@ -678,41 +721,73 @@ local function update()
             animals[#animals + 1] = animal
         end
     end
+    currentAnimals = animals
+    currentZombies = nil
 
     local people = players()
     local joggers, sprinters = movingPlayers(people)
-    local zombies = zombiesNear(animals)
     local cap = units * MAX_SPOT_STRESS
     local seen = {}
     rammers = {}
 
     for i = 1, #animals do
         local animal = animals[i]
-        calm(animal, animal:getStress(), joggers, zombies, cap)
+        calm(animal, animal:getStress(), joggers, cap)
         spookBySprinters(animal, sprinters, units)
-        cancelPhantomFlee(animal, zombies, people)
+        cancelPhantomFlee(animal, people)
         seen[animal] = animal:getStress()
 
         if canThump(animal) then
             local agitated = isAgitated(animal)
-            -- A server update can land seconds after the ram, when the animal may have stopped.
-            if animal:isAnimalAttacking() or (isServer() and agitated) then
+            -- An update can land after the ram (100 ms in single player, seconds on a server),
+            -- when the animal may have stopped attacking.
+            if agitated then
                 rammers[#rammers + 1] = animal
             end
             if agitated then shieldAround(animal, hours) end
         end
     end
     lastStress = seen
+    currentZombies = nil
 
-    updateStumbles(units)
+    if moveStumbles then updateStumbles(units) end
     settleShields(hours)
 
+    local gone = {}
     for animal in pairs(futile) do
-        if not seen[animal] then futile[animal] = nil end
+        if not seen[animal] then gone[#gone + 1] = animal end
     end
     for animal in pairs(stumbles) do
-        if not seen[animal] then stumbles[animal] = nil end
+        if not seen[animal] then gone[#gone + 1] = animal end
     end
+    for animal in pairs(scans) do
+        if not seen[animal] then gone[#gone + 1] = animal end
+    end
+    for i = 1, #gone do
+        local animal = gone[i]
+        futile[animal] = nil
+        endStumble(animal)
+        scans[animal] = nil
+    end
+end
+
+-- Stress gains and stumbles are scaled by the GameTime multiplier, so it is summed over the
+-- ticks between updates.
+local function onTick()
+    local multiplier = getGameTime():getMultiplier()
+    pendingUnits = pendingUnits + multiplier
+    if stumbleCount > 0 then updateStumbles(multiplier) end
+
+    local now = getTimestampMs()
+    if now < nextUpdateMs then return end
+    nextUpdateMs = now + UPDATE_INTERVAL_MS
+    local units = pendingUnits
+    pendingUnits = 0
+    update(units, false)
+end
+
+local function onEveryOneMinute()
+    update(serverUnits(), true)
 end
 
 local function onSave()
@@ -722,6 +797,8 @@ local function onSave()
         local obj, entry = list[i][1], list[i][2]
         if isGone(obj) then shields[obj] = nil else release(obj, entry) end
     end
+    -- Released objects must be shielded again on the next update.
+    scans = {}
 end
 
 local function onLoadGridsquare(square)
@@ -755,10 +832,10 @@ if ISMoveableSpriteProps and not ISMoveableSpriteProps.SensibleLivestock_Hooked 
     end
 end
 
-if isServer() then
-    Events.EveryOneMinute.Add(update)
+if SERVER then
+    Events.EveryOneMinute.Add(onEveryOneMinute)
 else
-    Events.OnTick.Add(update)
+    Events.OnTick.Add(onTick)
 end
 Events.OnSave.Add(onSave)
 Events.LoadGridsquare.Add(onLoadGridsquare)
