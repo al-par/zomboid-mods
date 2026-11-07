@@ -6,10 +6,12 @@ module Base
         time = 100,
         Tags = AnySurfaceCraft;CanBeDoneInDark,
         category = Cooking,
+        OnTest = SaltLickSalt.onTest,
+        OnCreate = SaltLickSalt.onBreak,
         inputs
         {
             item 1 tags[base:hammer;base:sledgehammer;base:clubhammer;base:hammerstone] mode:keep flags[Prop1;MayDegradeLight],
-            item 1 [Base.SLS_SaltLick],
+            item 1 [Base.SLS_SaltLick;Base.Mov_SaltLick;Moveables.Moveable],
         }
         outputs
         {
