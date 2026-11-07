@@ -242,9 +242,15 @@ local CREEP_PUSH = 0.25
 local SPEED_PUSH = 0.12
 local RESEND_FRAMES = 60
 
+-- Breakable objects around each driven vehicle are cached in a wider area, re-read once the car
+-- has moved CACHE_MARGIN squares or after CACHE_FRAMES, so most frames touch no squares at all.
+local CACHE_MARGIN = 2
+local CACHE_FRAMES = 30
+
 local hit = Vector2.new()
 local frame = 0
 local requested = {}
+local caches = {}       -- vehicle -> { x, y, z, frame, used, count, objs, xs, ys, defs, names }
 
 local function requestFlatten(player, vehicle, obj, def, name)
     -- Flattening one piece of a multi-tile gate removes the other pieces hit this tick.
@@ -268,17 +274,13 @@ local function requestFlatten(player, vehicle, obj, def, name)
     })
 end
 
-local function handleVehicle(cell, player, vehicle, speed)
-    local vx = vehicle:getX()
-    local vy = vehicle:getY()
-    local cx = math.floor(vx)
-    local cy = math.floor(vy)
-    local z = math.floor(vehicle:getZ())
-    local push = (CREEP_PUSH + SPEED_PUSH * speed) * vehicle:getFudgedMass()
-    local flattened = {}
-
-    for x = cx - SCAN, cx + SCAN do
-        for y = cy - SCAN, cy + SCAN do
+local function refreshCache(cache, cell, cx, cy, z)
+    cache.x, cache.y, cache.z, cache.frame = cx, cy, z, frame
+    local objs, xs, ys, defs, names = cache.objs, cache.xs, cache.ys, cache.defs, cache.names
+    local n = 0
+    local reach = SCAN + CACHE_MARGIN
+    for x = cx - reach, cx + reach do
+        for y = cy - reach, cy + reach do
             local square = cell:getGridSquare(x, y, z)
             if square then
                 local objects = square:getObjects()
@@ -286,20 +288,58 @@ local function handleVehicle(cell, player, vehicle, speed)
                     local obj = objects:get(i)
                     local def, name = breakableDef(obj)
                     if def then
-                        -- A zero radius only matches when the pole's center is inside the car's footprint.
-                        if vehicle:testCollisionWithObject(obj, 0, hit) then
-                            flattened[#flattened + 1] = { obj, def, name }
-                        elseif vehicle:testCollisionWithObject(obj, CONTACT, hit) then
-                            local dx = vx - (x + 0.5)
-                            local dy = vy - (y + 0.5)
-                            if speed > def.speed then
-                                flattened[#flattened + 1] = { obj, def, name }
-                            -- The shove direction is pole-to-car-center; at zero length it normalizes to NaN.
-                            elseif dx * dx + dy * dy > 0.0001 then
-                                vehicle:applyImpulseFromHitObject(obj, push)
-                            end
-                        end
+                        n = n + 1
+                        objs[n], xs[n], ys[n], defs[n], names[n] = obj, x, y, def, name
                     end
+                end
+            end
+        end
+    end
+    for i = n + 1, cache.count do
+        objs[i], xs[i], ys[i], defs[i], names[i] = nil, nil, nil, nil, nil
+    end
+    cache.count = n
+end
+
+local function handleVehicle(cell, player, vehicle, speed)
+    local vx = vehicle:getX()
+    local vy = vehicle:getY()
+    local cx = math.floor(vx)
+    local cy = math.floor(vy)
+    local z = math.floor(vehicle:getZ())
+
+    local cache = caches[vehicle]
+    if not cache then
+        cache = { count = 0, objs = {}, xs = {}, ys = {}, defs = {}, names = {} }
+        caches[vehicle] = cache
+        refreshCache(cache, cell, cx, cy, z)
+    elseif cache.used ~= frame - 1 or cache.z ~= z or frame - cache.frame >= CACHE_FRAMES
+            or math.abs(cx - cache.x) > CACHE_MARGIN or math.abs(cy - cache.y) > CACHE_MARGIN then
+        refreshCache(cache, cell, cx, cy, z)
+    end
+    cache.used = frame
+    if cache.count == 0 then return end
+
+    local push = (CREEP_PUSH + SPEED_PUSH * speed) * vehicle:getFudgedMass()
+    local flattened = {}
+    local objs, xs, ys, defs, names = cache.objs, cache.xs, cache.ys, cache.defs, cache.names
+
+    for i = 1, cache.count do
+        local x, y, obj = xs[i], ys[i], objs[i]
+        -- Flattened or picked-up objects stay cached until the next refresh.
+        if math.abs(x - cx) <= SCAN and math.abs(y - cy) <= SCAN and obj:getObjectIndex() >= 0 then
+            local def, name = defs[i], names[i]
+            -- A zero radius only matches when the pole's center is inside the car's footprint.
+            if vehicle:testCollisionWithObject(obj, 0, hit) then
+                flattened[#flattened + 1] = { obj, def, name }
+            elseif vehicle:testCollisionWithObject(obj, CONTACT, hit) then
+                local dx = vx - (x + 0.5)
+                local dy = vy - (y + 0.5)
+                if speed > def.speed then
+                    flattened[#flattened + 1] = { obj, def, name }
+                -- The shove direction is pole-to-car-center; at zero length it normalizes to NaN.
+                elseif dx * dx + dy * dy > 0.0001 then
+                    vehicle:applyImpulseFromHitObject(obj, push)
                 end
             end
         end
@@ -311,9 +351,16 @@ local function handleVehicle(cell, player, vehicle, speed)
     end
 end
 
+local function pruneCaches()
+    local stale = {}
+    for vehicle, cache in pairs(caches) do
+        if cache.used ~= frame then stale[#stale + 1] = vehicle end
+    end
+    for i = 1, #stale do caches[stale[i]] = nil end
+end
+
 local function onTick()
     frame = frame + 1
-    if isServer() then return end
     local cell = getCell()
     if not cell then return end
     for i = 0, getNumActivePlayers() - 1 do
@@ -328,6 +375,7 @@ local function onTick()
             end
         end
     end
+    if frame % CACHE_FRAMES == 0 then pruneCaches() end
 end
 
 -- Built wooden poles ---------------------------------------------------------------------------
@@ -364,6 +412,9 @@ end
 Events.OnLoadedTileDefinitions.Add(editTiles)
 Events.OnGameStart.Add(onWorldReady)
 Events.OnServerStarted.Add(onWorldReady)
-Events.OnTick.Add(onTick)
+-- Only the machine simulating a car (single player or the driver's client) watches for hits.
+if not isServer() then
+    Events.OnTick.Add(onTick)
+end
 Events.OnClientCommand.Add(onClientCommand)
 Events.LoadGridsquare.Add(onLoadGridsquare)
