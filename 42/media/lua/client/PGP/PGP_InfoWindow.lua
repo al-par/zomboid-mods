@@ -24,11 +24,30 @@ local function poolText(generator)
 	return text
 end
 
+-- getRichText runs every frame while the window is open; the pool text is rebuilt at most once per CACHE_MS.
+local CACHE_MS = 1000
+local MAX_CACHED = 8
+local cache, cached = {}, 0
+
+local function cachedPoolText(generator)
+	local now = getTimestampMs()
+	local e = cache[generator]
+	if not e then
+		if cached >= MAX_CACHED then cache, cached = {}, 0 end
+		e = { at = now, text = poolText(generator) }
+		cache[generator] = e
+		cached = cached + 1
+	elseif now - e.at >= CACHE_MS then
+		e.at, e.text = now, poolText(generator)
+	end
+	return e.text
+end
+
 local getRichText = ISGeneratorInfoWindow.getRichText
 function ISGeneratorInfoWindow.getRichText(object, displayStats)
 	local text = getRichText(object, displayStats)
 	if displayStats and object then
-		text = text .. poolText(object)
+		text = text .. cachedPoolText(object)
 	end
 	return text
 end

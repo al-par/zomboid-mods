@@ -8,11 +8,12 @@ local B = PGP.Barrels
 
 -- The item may have been re-sent by the server since the cursor opened.
 function PGP_BarrelCursor:isHeld()
-	for _, held in ipairs({ self.character:getPrimaryHandItem(), self.character:getSecondaryHandItem() }) do
-		if held and held:getID() == self.item:getID() then
-			self.item = held
-			return true
-		end
+	local id = self.item:getID()
+	local held = self.character:getPrimaryHandItem()
+	if not held or held:getID() ~= id then held = self.character:getSecondaryHandItem() end
+	if held and held:getID() == id then
+		self.item = held
+		return true
 	end
 	return false
 end

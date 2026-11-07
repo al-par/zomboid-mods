@@ -17,7 +17,7 @@
     "Tooltip_PGP_BarrelFull": "The barrel is full.",
     "Tooltip_PGP_BarrelOtherFluid": "The barrel holds something other than petrol.",
     "Tooltip_PGP_NotTrunk": "Barrels only go in vehicle trunks and truck beds.",
-    "Tooltip_PGP_TrunkTooSmall": "The trunk is too small for a barrel (needs capacity over 100).",
+    "Tooltip_PGP_TrunkTooSmall": "The trunk is too small for a barrel (needs capacity 100 or more).",
     "Tooltip_PGP_TrunkNotEmpty": "The trunk must be empty to fit a barrel.",
     "Tooltip_PGP_TrunkClosed": "The trunk is closed or locked."
 }

@@ -15,6 +15,26 @@ PGP.CABLE_ITEMS = { [PGP.CABLE_ITEM] = true, ["Base.PowerBar"] = true }
 function PGP.isCableItem(item)
     return item ~= nil and PGP.CABLE_ITEMS[item:getFullType()] == true
 end
+
+-- A makeshift cable lays this many tiles; anything else lays one.
+PGP.CABLE_USES = 5
+
+function PGP.cableUses(item)
+    if item:getFullType() ~= PGP.CABLE_ITEM then return 1 end
+    return item:getModData().pgpUses or PGP.CABLE_USES
+end
+
+function PGP.setCableUses(item, uses)
+    item:getModData().pgpUses = uses
+    local name = getItemNameFromFullType(item:getFullType())
+    if uses < PGP.CABLE_USES then
+        item:setName(getText("IGUI_PGP_CableUses", name, uses, PGP.CABLE_USES))
+        item:setCustomName(true)
+    else
+        item:setName(name)
+        item:setCustomName(false)
+    end
+end
 PGP.IDLE_DRAW = 0.02
 
 -- Orthogonal neighbours; bit values match the cable sprite index (N=1, E=2, S=4, W=8).
@@ -380,9 +400,25 @@ function PGP.chunkCoords(chunk)
     return nil
 end
 
+local REAPPLY_PER_TICK = 4
+local REFRESH_CHUNKS_PER_TICK = 4
+
 local function positionChunkRange(p)
-    local r = PGP.baseRadius()
-    return math.floor((p.x - r) / 8), math.floor((p.y - r) / 8), math.floor((p.x + r) / 8), math.floor((p.y + r) / 8)
+    if not p.ax then
+        local r = PGP.baseRadius()
+        p.ax, p.ay = math.floor((p.x - r) / 8), math.floor((p.y - r) / 8)
+        p.bx, p.by = math.floor((p.x + r) / 8), math.floor((p.y + r) / 8)
+    end
+    return p.ax, p.ay, p.bx, p.by
+end
+
+local function addToLoadedChunks(p, ax, ay, bx, by)
+    for wy = ay, by do
+        for wx = ax, bx do
+            local chunk = PGP.chunkAt(wx, wy)
+            if chunk then chunk:addGeneratorPos(p.x, p.y, p.z) end
+        end
+    end
 end
 
 local function forEachLoadedChunk(p, fn, wx0, wy0, wx1, wy1)
@@ -416,7 +452,7 @@ function Power.desired()
                             local px = m.x + math.floor(d * math.cos(a) + 0.5)
                             local py = m.y + math.floor(d * math.sin(a) + 0.5)
                             local k = PGP.key(px, py, m.z)
-                            if not st.memberPool[k] then out[k] = { x = px, y = py, z = m.z } end
+                            if not st.memberPool[k] then out[k] = { x = px, y = py, z = m.z, k = k } end
                         end
                         local inner = d - base
                         if inner <= base - 2 then break end
@@ -454,18 +490,38 @@ end
 -- Vanilla drops positions without a running generator whenever a nearby chunk loads; put ours back.
 function Power.reapplyNear(wx, wy)
     local r = math.floor(PGP.baseRadius() / 8) + 1
+    local x0, y0, x1, y1 = wx - r, wy - r, wx + r, wy + r
     for _, p in pairs(Power.applied) do
         local ax, ay, bx, by = positionChunkRange(p)
-        if bx >= wx - r and ax <= wx + r and by >= wy - r and ay <= wy + r then
-            forEachLoadedChunk(p, function(chunk) chunk:addGeneratorPos(p.x, p.y, p.z) end, wx - r, wy - r, wx + r, wy + r)
+        if bx >= x0 and ax <= x1 and by >= y0 and ay <= y1 then
+            addToLoadedChunks(p, math.max(ax, x0), math.max(ay, y0), math.min(bx, x1), math.min(by, y1))
         end
     end
 end
 
 function Power.reapplyAll()
     for _, p in pairs(Power.applied) do
-        forEachLoadedChunk(p, function(chunk) chunk:addGeneratorPos(p.x, p.y, p.z) end)
+        addToLoadedChunks(p, positionChunkRange(p))
     end
+end
+
+-- Same as reapplyAll, spread over ticks by stepReapply.
+function Power.startReapply()
+    if Power.reapplyList then return end
+    local list = {}
+    for _, p in pairs(Power.applied) do list[#list + 1] = p end
+    if #list > 0 then Power.reapplyList, Power.reapplyIndex = list, 1 end
+end
+
+function Power.stepReapply()
+    local list, applied = Power.reapplyList, Power.applied
+    local i = Power.reapplyIndex
+    local last = math.min(#list, i + REAPPLY_PER_TICK - 1)
+    for j = i, last do
+        local p = list[j]
+        if applied[p.k] then addToLoadedChunks(p, positionChunkRange(p)) end
+    end
+    if last >= #list then Power.reapplyList = nil else Power.reapplyIndex = last + 1 end
 end
 
 local function refreshChunkObjects(chunk, zmin, zmax)
@@ -489,20 +545,52 @@ local function refreshChunkObjects(chunk, zmin, zmax)
     end
 end
 
+-- Chunks waiting for a refresh, REFRESH_CHUNKS_PER_TICK per tick; refreshSeen[wx][wy] merges repeats.
+Power.refreshList, Power.refreshIndex, Power.refreshSeen = {}, 1, {}
+
+local function queueRefresh(wx, wy, zmin, zmax)
+    local row = Power.refreshSeen[wx]
+    if not row then
+        row = {}
+        Power.refreshSeen[wx] = row
+    end
+    local e = row[wy]
+    if e then
+        if zmin < e.zmin then e.zmin = zmin end
+        if zmax > e.zmax then e.zmax = zmax end
+    else
+        e = { wx = wx, wy = wy, zmin = zmin, zmax = zmax }
+        row[wy] = e
+        table.insert(Power.refreshList, e)
+    end
+end
+
+local function stepRefresh()
+    local list, seen = Power.refreshList, Power.refreshSeen
+    local i = Power.refreshIndex
+    local last = math.min(#list, i + REFRESH_CHUNKS_PER_TICK - 1)
+    for j = i, last do
+        local e = list[j]
+        seen[e.wx][e.wy] = nil
+        local chunk = PGP.chunkAt(e.wx, e.wy)
+        if chunk then refreshChunkObjects(chunk, e.zmin, e.zmax) end
+    end
+    if last >= #list then
+        Power.refreshList, Power.refreshIndex, Power.refreshSeen = {}, 1, {}
+    else
+        Power.refreshIndex = last + 1
+    end
+end
+
 -- Lets lights and appliances notice power appearing or disappearing at the changed positions.
 function Power.refreshArea(positions)
-    local r, v = PGP.baseRadius(), PGP.verticalRange()
-    local minX, minY, maxX, maxY, minZ, maxZ
+    local v = PGP.verticalRange()
     for _, p in ipairs(positions) do
-        minX = math.min(minX or p.x, p.x - r); maxX = math.max(maxX or p.x, p.x + r)
-        minY = math.min(minY or p.y, p.y - r); maxY = math.max(maxY or p.y, p.y + r)
-        minZ = math.min(minZ or p.z, p.z - v); maxZ = math.max(maxZ or p.z, p.z + v)
-    end
-    if not minX then return end
-    for wy = math.floor(minY / 8), math.floor(maxY / 8) do
-        for wx = math.floor(minX / 8), math.floor(maxX / 8) do
-            local chunk = PGP.chunkAt(wx, wy)
-            if chunk then refreshChunkObjects(chunk, minZ, maxZ) end
+        local ax, ay, bx, by = positionChunkRange(p)
+        for wy = ay, by do
+            for wx = ax, bx do
+                queueRefresh(wx, wy, p.z - v, p.z + v)
+            end
         end
     end
 end
@@ -517,13 +605,13 @@ local function onLoadChunk(chunk)
             for _, p in pairs(Power.applied) do
                 local ax, ay, bx, by = positionChunkRange(p)
                 if wx >= ax and wx <= bx and wy >= ay and wy <= by then
-                    refreshChunkObjects(chunk, p.z - v, p.z + v)
+                    queueRefresh(wx, wy, p.z - v, p.z + v)
                     break
                 end
             end
         end
     end
-    if PGP.Server then PGP.Server.onChunkLoaded(chunk) end
+    if PGP.Server then PGP.Server.onChunkLoaded(chunk, wx, wy) end
 end
 
 local function onTick()
@@ -532,6 +620,8 @@ local function onTick()
         PGP.powerDirty = false
         Power.apply()
     end
+    if Power.reapplyList then Power.stepReapply() end
+    if Power.refreshIndex <= #Power.refreshList then stepRefresh() end
 end
 
 local function onInitGlobalModData()
@@ -552,4 +642,4 @@ Events.OnInitGlobalModData.Add(onInitGlobalModData)
 Events.OnReceiveGlobalModData.Add(onReceiveGlobalModData)
 Events.OnTick.Add(onTick)
 Events.LoadChunk.Add(onLoadChunk)
-Events.EveryOneMinute.Add(function() Power.reapplyAll() end)
+Events.EveryOneMinute.Add(function() Power.startReapply() end)

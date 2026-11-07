@@ -8,5 +8,6 @@
     "IGUI_PGP_Barrels": "Petrol in pool barrels: %1 L",
     "IGUI_PGP_BarrelContents": "%1 L %2",
     "IGUI_PGP_BarrelNamed": "%1 (%2)",
-    "IGUI_PGP_NoRoomForBarrel": "No room to put the barrel down"
+    "IGUI_PGP_NoRoomForBarrel": "No room to put the barrel down",
+    "IGUI_PGP_CableUses": "%1 (%2/%3)"
 }

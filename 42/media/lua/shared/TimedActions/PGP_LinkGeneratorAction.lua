@@ -68,7 +68,7 @@ function PGP_LinkGeneratorAction:complete()
 		sendRemoveItemFromContainer(container, item)
 	end
 	self.generator:setConnected(true)
-	if PGP.Server then PGP.Server.addMember(pid, self.generator) end
+	if PGP.Server then PGP.Server.addMember(pid, self.generator, true) end
 	addXp(self.character, Perks.Electricity, 5)
 	return true
 end

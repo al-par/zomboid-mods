@@ -72,11 +72,13 @@ function S.createPool(gen)
     return pid
 end
 
-function S.addMember(pid, gen)
+-- linked: joined through "Link to Pool", which used up materials.
+function S.addMember(pid, gen, linked)
     local k = genKey(gen)
     local pool = PGP.getPool(pid)
     if not k or not pool then return false end
     pool.members[k] = newMember(gen)
+    pool.members[k].linked = linked or nil
     S.changed()
     PGP.rebuild()
     local sq = gen:getSquare()
@@ -85,6 +87,7 @@ function S.addMember(pid, gen)
     return true
 end
 
+-- Returns the removed member, or nil.
 function S.removeMemberAt(k)
     local data = PGP.getData()
     for pid, pool in pairs(data.pools) do
@@ -96,15 +99,15 @@ function S.removeMemberAt(k)
             S.changed()
             PGP.rebuild()
             S.refreshCableSprites(m.x, m.y, m.z)
-            return true
+            return m
         end
     end
-    return false
+    return nil
 end
 
 function S.removeGenerator(gen)
     local k = genKey(gen)
-    if k then S.removeMemberAt(k) end
+    return k and S.removeMemberAt(k) or nil
 end
 
 -- Connected generators that predate the mod (or were connected without our hooks) join the single
@@ -204,7 +207,16 @@ function S.validate()
     end
 end
 
-function S.onChunkLoaded(chunk)
+local function hasMemberInChunk(wx, wy)
+    for _, pool in pairs(PGP.getData().pools) do
+        for _, m in pairs(pool.members) do
+            if math.floor(m.x / 8) == wx and math.floor(m.y / 8) == wy then return true end
+        end
+    end
+    return false
+end
+
+function S.onChunkLoaded(chunk, wx, wy)
     local z0, z1 = chunk:getMinLevel(), chunk:getMaxLevel()
     for z = z0, z1 do
         for ly = 0, 7 do
@@ -215,7 +227,7 @@ function S.onChunkLoaded(chunk)
             end
         end
     end
-    S.needLive = true
+    if not wx or hasMemberInChunk(wx, wy) then S.needLive = true end
 end
 
 function S.processPendingAdopt()
@@ -229,7 +241,10 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Load split: every powered appliance is billed once at its vanilla rate, divided evenly between
 -- the pools covering it, then evenly between the running generators of each pool.
+-- A scan is spread over ticks, SCAN_SLICES_PER_TICK chunk levels (8x8 squares each) per tick.
 ---------------------------------------------------------------------------------------------------
+
+local SCAN_SLICES_PER_TICK = 4
 
 local function covered(runners, x, y, z, r2, v)
     for _, m in ipairs(runners) do
@@ -241,51 +256,73 @@ local function covered(runners, x, y, z, r2, v)
     return false
 end
 
-function S.scanPool(pid, consumers)
+-- Whether any runner's radius reaches a square of the chunk at (wx, wy), ignoring levels.
+local function chunkReached(runners, wx, wy, r2)
+    local x0, y0 = wx * 8, wy * 8
+    local x1, y1 = x0 + 7, y0 + 7
+    for _, m in ipairs(runners) do
+        local dx = (m.x < x0 and x0 - m.x) or (m.x > x1 and m.x - x1) or 0
+        local dy = (m.y < y0 and y0 - m.y) or (m.y > y1 and m.y - y1) or 0
+        if dx * dx + dy * dy <= r2 then return true end
+    end
+    return false
+end
+
+local function newScanJob(pid)
     local pool = PGP.getPool(pid)
-    if not pool then return end
+    if not pool then return nil end
     local runners = PGP.runningMembers(pool)
-    if #runners == 0 then return end
-    local st = PGP.ensureState()
-    local r = st.poolRadius[pid] or PGP.baseRadius()
-    local r2, v = r * r, PGP.verticalRange()
-    local allowExterior = SandboxVars.AllowExteriorGenerator
+    if #runners == 0 then return nil end
+    local r = PGP.ensureState().poolRadius[pid] or PGP.baseRadius()
+    local v = PGP.verticalRange()
     local minX, minY, maxX, maxY, minZ, maxZ
     for _, m in ipairs(runners) do
         minX = math.min(minX or m.x, m.x - r); maxX = math.max(maxX or m.x, m.x + r)
         minY = math.min(minY or m.y, m.y - r); maxY = math.max(maxY or m.y, m.y + r)
         minZ = math.min(minZ or m.z, m.z - v); maxZ = math.max(maxZ or m.z, m.z + v)
     end
-    for wy = math.floor(minY / 8), math.floor(maxY / 8) do
-        for wx = math.floor(minX / 8), math.floor(maxX / 8) do
-            local chunk = PGP.chunkAt(wx, wy)
-            if chunk then
-                for z = math.max(minZ, chunk:getMinLevel()), math.min(maxZ, chunk:getMaxLevel()) do
-                    for ly = 0, 7 do
-                        for lx = 0, 7 do
-                            local sq = chunk:getGridSquare(lx, ly, z)
-                            if sq then
-                                local objects = sq:getObjects()
-                                local n = objects:size()
-                                local x, y = wx * 8 + lx, wy * 8 + ly
-                                if n > 0 and covered(runners, x, y, z, r2, v)
-                                        and not sq:hasGridPower()
-                                        and (allowExterior or not sq:has(IsoFlagType.exterior)) then
-                                    for i = 0, n - 1 do
-                                        local c = objects:get(i):getGeneratorPowerConsumption()
-                                        if c > 0 then
-                                            local ck = x .. "," .. y .. "," .. z .. ":" .. i
-                                            local e = consumers[ck]
-                                            if not e then
-                                                e = { c = c, n = 0, pools = {} }
-                                                consumers[ck] = e
-                                            end
-                                            if not e.pools[pid] then
-                                                e.pools[pid] = true
-                                                e.n = e.n + 1
-                                            end
-                                        end
-                                    end
+    local wx0 = math.floor(minX / 8)
+    return {
+        pid = pid, runners = runners, r2 = r * r, v = v, allowExterior = SandboxVars.AllowExteriorGenerator,
+        minZ = minZ, maxZ = maxZ, wx0 = wx0, wx1 = math.floor(maxX / 8), wy1 = math.floor(maxY / 8),
+        wx = wx0, wy = math.floor(minY / 8), z = nil, zTop = nil,
+    }
+end
+
+local function nextScanChunk(job)
+    job.z = nil
+    job.wx = job.wx + 1
+    if job.wx > job.wx1 then
+        job.wx = job.wx0
+        job.wy = job.wy + 1
+    end
+end
+
+local function scanSlice(job, chunk, z, consumers)
+    local runners, r2, v, pid, allowExterior = job.runners, job.r2, job.v, job.pid, job.allowExterior
+    local x0, y0 = job.wx * 8, job.wy * 8
+    for ly = 0, 7 do
+        local y = y0 + ly
+        for lx = 0, 7 do
+            local x = x0 + lx
+            if covered(runners, x, y, z, r2, v) then
+                local sq = chunk:getGridSquare(lx, ly, z)
+                if sq then
+                    local objects = sq:getObjects()
+                    local n = objects:size()
+                    if n > 0 and not sq:hasGridPower() and (allowExterior or not sq:has(IsoFlagType.exterior)) then
+                        for i = 0, n - 1 do
+                            local c = objects:get(i):getGeneratorPowerConsumption()
+                            if c > 0 then
+                                local ck = x .. "," .. y .. "," .. z .. ":" .. i
+                                local e = consumers[ck]
+                                if not e then
+                                    e = { c = c, n = 0, pools = {} }
+                                    consumers[ck] = e
+                                end
+                                if not e.pools[pid] then
+                                    e.pools[pid] = true
+                                    e.n = e.n + 1
                                 end
                             end
                         end
@@ -296,12 +333,45 @@ function S.scanPool(pid, consumers)
     end
 end
 
+-- Scans one chunk level of the job, or skips a chunk out of reach. Returns nil once the job is
+-- done, otherwise the work done (0 when no game object was touched).
+local function stepScanJob(job, consumers)
+    if job.wy > job.wy1 then return nil end
+    if not job.z then
+        if not chunkReached(job.runners, job.wx, job.wy, job.r2) then
+            nextScanChunk(job)
+            return 0
+        end
+        local chunk = PGP.chunkAt(job.wx, job.wy)
+        if not chunk then
+            nextScanChunk(job)
+            return 1
+        end
+        job.z = math.max(job.minZ, chunk:getMinLevel())
+        job.zTop = math.min(job.maxZ, chunk:getMaxLevel())
+    end
+    if job.z <= job.zTop then
+        local chunk = PGP.chunkAt(job.wx, job.wy)
+        if chunk then scanSlice(job, chunk, job.z, consumers) end
+        job.z = job.z + 1
+    end
+    if job.z > job.zTop then nextScanChunk(job) end
+    return 1
+end
+
+-- Scans a whole pool at once.
+function S.scanPool(pid, consumers)
+    local job = newScanJob(pid)
+    if not job then return end
+    while stepScanJob(job, consumers) do end
+end
+
 function S.startScan()
     local queue = {}
     for pid, pool in pairs(PGP.getData().pools) do
         if #PGP.runningMembers(pool) > 0 then table.insert(queue, pid) end
     end
-    S.scan = { queue = queue, i = 1, consumers = {} }
+    S.scan = { queue = queue, i = 1, consumers = {}, job = nil }
     S.needScan = false
 end
 
@@ -325,13 +395,21 @@ end
 
 function S.stepScan()
     local scan = S.scan
-    local pid = scan.queue[scan.i]
-    if pid then
-        S.scanPool(pid, scan.consumers)
-        scan.i = scan.i + 1
-    else
-        S.finishScan(scan)
-        S.scan = nil
+    local budget = SCAN_SLICES_PER_TICK
+    while budget > 0 do
+        if scan.job then
+            local cost = stepScanJob(scan.job, scan.consumers)
+            if cost then budget = budget - cost else scan.job = nil end
+        else
+            local pid = scan.queue[scan.i]
+            if not pid then
+                S.finishScan(scan)
+                S.scan = nil
+                return
+            end
+            scan.i = scan.i + 1
+            scan.job = newScanJob(pid)
+        end
     end
 end
 
@@ -406,7 +484,6 @@ local function fillTank(gen, barrels)
     local got = drain(barrels, need)
     if got > 0 then
         gen:setFuel(gen:getFuel() + got)
-        gen:sync()
     end
 end
 

@@ -34,13 +34,18 @@ function PGP_LayCableAction:perform()
 end
 
 function PGP_LayCableAction:complete()
-	if not PGP.checkCable(self.square:getX(), self.square:getY(), self.square:getZ()) then return false end
 	local container = self.item:getContainer()
-	if not container then return false end
+	if not container or not PGP.Server then return false end
+	if not PGP.Server.placeCable(self.square, self.item:getFullType()) then return false end
+	local uses = PGP.cableUses(self.item)
+	if uses > 1 then
+		PGP.setCableUses(self.item, uses - 1)
+		syncItemFields(self.character, self.item)
+		return true
+	end
 	self.character:removeFromHands(self.item)
 	container:Remove(self.item)
 	sendRemoveItemFromContainer(container, self.item)
-	if PGP.Server then PGP.Server.placeCable(self.square, self.item:getFullType()) end
 	return true
 end
 

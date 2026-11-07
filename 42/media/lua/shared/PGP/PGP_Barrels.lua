@@ -440,7 +440,7 @@ end
 function B.trunkReason(character, container)
     local part = B.trunkPart(container)
     if not part then return "NotTrunk" end
-    if container:getCapacity() <= B.TRUNK_MIN_CAPACITY then return "TrunkTooSmall" end
+    if container:getEffectiveCapacity(character) < B.TRUNK_MIN_CAPACITY then return "TrunkTooSmall" end
     if not container:getItems():isEmpty() then return "TrunkNotEmpty" end
     if not part:getVehicle():canAccessContainer(part:getIndex(), character) then return "TrunkClosed" end
     return nil
