@@ -87,6 +87,10 @@ end
 
 local cachedContext
 
+-- Set when food crosses a fresh/stale/rotten threshold; the inventory pages are
+-- refreshed once when the current batch of work finishes.
+local changed = false
+
 local function context()
     local now = getGameTime():getWorldAgeHours()
     if cachedContext and cachedContext.now == now then return cachedContext end
@@ -102,7 +106,6 @@ local function context()
         clock = advanceClock(now, band),
         fridge = FRIDGE_FACTOR[tonumber(SandboxVars.FridgeFactor) or 3] or 0.2,
         rot = ROT_SPEED[tonumber(SandboxVars.FoodRotSpeed) or 3] or 1.0,
-        changed = false,
     }
     return cachedContext
 end
@@ -127,7 +130,8 @@ local function locate(item)
             node = bag
         else
             local parent = container:getParent()
-            if not parent or instanceof(parent, "IsoGameCharacter") then return nil end
+            if not parent or instanceof(parent, "IsoGameCharacter")
+                or instanceof(parent, "BaseVehicle") then return nil end
             square = parent:getSquare()
             if not square then return nil end
             return square, path .. tostring(container:getType()), container
@@ -150,17 +154,17 @@ end
 
 -- Food updates ---------------------------------------------------------------
 
-local function setAge(food, age, ctx)
+local function setAge(food, age)
     local wasFresh, wasRotten = food:isFresh(), food:isRotten()
     food:setAge(age)
     if food:isFresh() ~= wasFresh or food:isRotten() ~= wasRotten then
-        ctx.changed = true
+        changed = true
     end
 end
 
 -- Pins the age of food sitting in a powered freezer/fridge to the value it had
 -- when it was first seen there.
-local function holdAge(food, md, ctx)
+local function holdAge(food, md)
     local held = md[HOLD] or md[LEGACY_HOLD]
     md[LEGACY_HOLD] = nil
     local age = food:getAge()
@@ -168,7 +172,7 @@ local function holdAge(food, md, ctx)
         md[HOLD] = age
     else
         md[HOLD] = held
-        if age > held then setAge(food, held, ctx) end
+        if age > held then setAge(food, held) end
     end
 end
 
@@ -246,7 +250,7 @@ local function applyOutdoorTemperature(food, md, key, ctx)
 
     -- Never spoil food faster than vanilla did; only take back the excess.
     local allowed = s.a + agingHours * ctx.rot / 24
-    if age > allowed then setAge(food, allowed, ctx) end
+    if age > allowed then setAge(food, allowed) end
 
     if canFreeze then
         -- setFreezingTime() only changes the frozen flag at 0% and 100%.
@@ -257,12 +261,14 @@ local function applyOutdoorTemperature(food, md, key, ctx)
     snapshot(food, md, key, ctx)
 end
 
-local function processFood(food, ctx)
+local function processFood(food)
+    local ctx = context()
+    if not ctx then return end
     local md = food:getModData()
     local square, path, container = locate(food)
     if container and stopsSpoilage(container, ctx.opt) then
         md[STATE] = nil
-        holdAge(food, md, ctx)
+        holdAge(food, md)
         return
     end
     md[HOLD], md[LEGACY_HOLD] = nil, nil
@@ -279,18 +285,18 @@ end
 
 local processList
 
-local function processItem(item, ctx, depth)
+local function processItem(item, depth)
     if instanceof(item, "Food") then
-        processFood(item, ctx)
+        processFood(item)
     elseif depth < MAX_DEPTH and instanceof(item, "InventoryContainer") then
         local inv = item:getItemContainer()
-        if inv then processList(inv:getItems(), ctx, depth + 1) end
+        if inv then processList(inv:getItems(), depth + 1) end
     end
 end
 
-processList = function(items, ctx, depth)
+processList = function(items, depth)
     for i = 0, items:size() - 1 do
-        processItem(items:get(i), ctx, depth)
+        processItem(items:get(i), depth)
     end
 end
 
@@ -311,88 +317,166 @@ end
 
 -- Indoors only fridges and freezers matter; they are visited even when
 -- unpowered so food that lost power stops being held.
-local function processObjectContainers(obj, ctx, outside)
+local function processObjectContainers(obj, outside)
     for j = 0, obj:getContainerCount() - 1 do
         local container = obj:getContainerByIndex(j)
         if container and (outside or container:isFreezer() or container:isFridge())
             and not container:getItems():isEmpty() then
-            processList(container:getItems(), ctx, 0)
+            processList(container:getItems(), 0)
         end
     end
 end
 
-local function scanSquare(sq, ctx)
-    if not sq then return end
+local function scanSquare(sq)
     local outside = sq:isOutside()
     if outside then
         local worldObjects = sq:getWorldObjects()
         for i = 0, worldObjects:size() - 1 do
             local item = worldObjects:get(i):getItem()
-            if item then processItem(item, ctx, 0) end
+            if item then processItem(item, 0) end
         end
     end
     local objects = sq:getObjects()
     for i = 0, objects:size() - 1 do
-        processObjectContainers(objects:get(i), ctx, outside)
+        processObjectContainers(objects:get(i), outside)
     end
     if outside then
         -- Corpses live in this list rather than getObjects().
         local moving = sq:getStaticMovingObjects()
         for i = 0, moving:size() - 1 do
-            processObjectContainers(moving:get(i), ctx, true)
+            processObjectContainers(moving:get(i), true)
         end
     end
 end
 
-local function notifyIfChanged(ctx)
-    if ctx.changed then
-        ctx.changed = false
-        triggerEvent("OnContainerUpdate")
-    end
+-- Background work ------------------------------------------------------------
+-- Every 10 minutes the squares around each player are swept a few columns per
+-- tick, over about SWEEP_TICKS ticks, instead of all in one frame. Squares that load
+-- before the game starts are queued by coordinate (squares are pooled and
+-- reused) and drained the same way. Results are identical either way: each
+-- item replays its own history from its snapshot whenever it is processed.
+
+local SWEEP_TICKS = 60
+local MIN_SQUARES_PER_TICK = 200
+
+local areas = {}
+local areaCount, areaIndex, sweepX = 0, 1, 0
+local sweepBudget = MIN_SQUARES_PER_TICK
+local sweeping, sweepRequested = false, false
+
+local queueX, queueY, queueZ = {}, {}, {}
+local queueHead, queueTail = 1, 0
+local queueBudget = MIN_SQUARES_PER_TICK
+
+local ticking = false
+local onTick
+
+local function startTicking()
+    if ticking then return end
+    ticking = true
+    Events.OnTick.Add(onTick)
 end
 
-function ACS.scanAroundPlayers()
+local function startSweep()
     local ctx = context()
     if not ctx then return end
-    local cell = getCell()
-    if not cell then return end
     local r = ctx.opt.radius
+    local n = 0
     for p = 0, getNumActivePlayers() - 1 do
         local player = getSpecificPlayer(p)
         if player and not player:isDead() then
             local px, py = math.floor(player:getX()), math.floor(player:getY())
             local pz = math.floor(player:getZ())
-            local levels = { 0 }
+            n = n + 1
+            areas[n] = { px - r, px + r, py - r, py + r, 0 }
             for z = pz - 1, pz + 1 do
-                if z ~= 0 then levels[#levels + 1] = z end
-            end
-            for _, z in ipairs(levels) do
-                for x = px - r, px + r do
-                    for y = py - r, py + r do
-                        local sq = cell:getGridSquare(x, y, z)
-                        if sq then scanSquare(sq, ctx) end
-                    end
+                if z ~= 0 then
+                    n = n + 1
+                    areas[n] = { px - r, px + r, py - r, py + r, z }
                 end
             end
             local items = player:getInventory():getItems()
             for i = 0, items:size() - 1 do forget(items:get(i)) end
         end
     end
-    notifyIfChanged(ctx)
+    areaCount = n
+    if n == 0 then return end
+    local side = 2 * r + 1
+    sweepBudget = math.max(MIN_SQUARES_PER_TICK, math.ceil(n * side * side / SWEEP_TICKS))
+    areaIndex, sweepX = 1, areas[1][1]
+    sweeping = true
+    startTicking()
+end
+
+-- Advances the clock every 10 minutes even while a sweep is still running.
+function ACS.scanAroundPlayers()
+    if not context() then return end
+    if sweeping then
+        sweepRequested = true
+    else
+        startSweep()
+    end
+end
+
+onTick = function()
+    local cell = getCell()
+    if not cell then return end
+
+    local budget = queueBudget
+    while queueHead <= queueTail and budget > 0 do
+        local sq = cell:getGridSquare(queueX[queueHead], queueY[queueHead], queueZ[queueHead])
+        queueX[queueHead], queueY[queueHead], queueZ[queueHead] = nil, nil, nil
+        queueHead = queueHead + 1
+        budget = budget - 1
+        if sq then scanSquare(sq) end
+    end
+    if queueHead <= queueTail then return end
+    queueHead, queueTail = 1, 0
+
+    if sweeping then
+        budget = sweepBudget
+        while budget > 0 and areaIndex <= areaCount do
+            local area = areas[areaIndex]
+            local x, z = sweepX, area[5]
+            for y = area[3], area[4] do
+                local sq = cell:getGridSquare(x, y, z)
+                if sq then scanSquare(sq) end
+            end
+            budget = budget - (area[4] - area[3] + 1)
+            if x < area[2] then
+                sweepX = x + 1
+            else
+                areaIndex = areaIndex + 1
+                if areaIndex <= areaCount then sweepX = areas[areaIndex][1] end
+            end
+        end
+        if areaIndex <= areaCount then return end
+        sweeping = false
+    end
+
+    if changed then
+        changed = false
+        triggerEvent("OnContainerUpdate")
+    end
+    if sweepRequested then
+        sweepRequested = false
+        startSweep()
+        if sweeping then return end
+    end
+    ticking = false
+    Events.OnTick.Remove(onTick)
 end
 
 -- Transfers: credit the item's time at its old spot, drop its history, then
 -- start tracking it at the destination straight away.
 local function beforeMove(item)
-    local ctx = item and context()
-    if ctx then pcall(processItem, item, ctx, 0) end
+    if item then processItem(item, 0) end
 end
 
 local function afterMove(item)
     if not item then return end
     forget(item)
-    local ctx = context()
-    if ctx then pcall(processItem, item, ctx, 0) end
+    processItem(item, 0)
 end
 
 local originalTransferItem = ISTransferAction.transferItem
@@ -415,7 +499,6 @@ end
 -- Events ---------------------------------------------------------------------
 
 local started = false
-local pendingSquares = {}
 
 Events.OnInitGlobalModData.Add(function()
     clock = nil
@@ -425,12 +508,12 @@ end)
 -- Correct food in an area as soon as it loads, before vanilla's catch-up
 -- spoilage can rot it or trigger ReplaceOnRotten (e.g. ice cream melting).
 Events.LoadGridsquare.Add(function(sq)
-    if not started then
-        pendingSquares[#pendingSquares + 1] = sq
-        return
+    if started then
+        scanSquare(sq)
+    else
+        queueTail = queueTail + 1
+        queueX[queueTail], queueY[queueTail], queueZ[queueTail] = sq:getX(), sq:getY(), sq:getZ()
     end
-    local ctx = context()
-    if ctx then pcall(scanSquare, sq, ctx) end
 end)
 
 -- Vanilla fires this with the Food itself when it turns stale or rotten; fix
@@ -438,20 +521,17 @@ end)
 local inContainerUpdate = false
 Events.OnContainerUpdate.Add(function(arg)
     if not started or inContainerUpdate or not arg or not instanceof(arg, "Food") then return end
-    local ctx = context()
-    if not ctx then return end
     inContainerUpdate = true
-    pcall(processFood, arg, ctx)
+    processFood(arg)
     inContainerUpdate = false
 end)
 
 Events.OnGameStart.Add(function()
     started = true
-    local ctx = context()
-    if ctx then
-        for _, sq in ipairs(pendingSquares) do pcall(scanSquare, sq, ctx) end
+    if queueTail >= queueHead then
+        queueBudget = math.max(MIN_SQUARES_PER_TICK, math.ceil((queueTail - queueHead + 1) / SWEEP_TICKS))
+        startTicking()
     end
-    pendingSquares = {}
     ACS.scanAroundPlayers()
 end)
 
