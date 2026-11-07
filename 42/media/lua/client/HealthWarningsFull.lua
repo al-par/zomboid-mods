@@ -1,7 +1,14 @@
+local CHECK_INTERVAL_MS       = 250
+local TEMP_DANGER_LEVEL       = 3
+local FOOD_SICKNESS_THRESHOLD = 50
+local STARVING_MOODLE_LEVEL   = 4
+
+local CRITICAL_HEAD_PARTS  = { BodyPartType.Neck, BodyPartType.Head }
+local CRITICAL_TORSO_PARTS = { BodyPartType.Torso_Upper, BodyPartType.Torso_Lower }
+
 local initialized             = false
+local nextCheckMs             = 0
 local prevSickLevel           = 0
-local prevHypoLevel           = 0
-local prevHyperLevel          = 0
 local criticalInjuryTriggered = false
 local bulletTriggered         = false
 local glassTriggered          = false
@@ -13,19 +20,7 @@ local dehydrationTriggered    = false
 local hypoTriggered           = false
 local hyperTriggered          = false
 
-local TEMP_DANGER_LEVEL       = 3
-local FOOD_SICKNESS_THRESHOLD = 50
-local STARVING_MOODLE_LEVEL   = 4
-
-local CRITICAL_HEAD_PARTS  = nil
-local CRITICAL_TORSO_PARTS = nil
-local function initPartTables()
-    if CRITICAL_HEAD_PARTS then return end
-    CRITICAL_HEAD_PARTS  = { BodyPartType.Neck, BodyPartType.Head }
-    CRITICAL_TORSO_PARTS = { BodyPartType.Torso_Upper, BodyPartType.Torso_Lower }
-end
-
-local sv = function() return SandboxVars.HealthWarningsFull end
+local function sv() return SandboxVars.HealthWarningsFull end
 
 local function pauseGame()
     local sc = UIManager.getSpeedControls()
@@ -39,6 +34,19 @@ local function openHealthPanel()
     end
 end
 
+-- ISModalRichText:destroy minus its SetCurrentGameSpeed(1), so closing the dialog does not unpause the game
+local function destroyWithoutUnpause(self)
+    UIManager.setShowPausedMessage(true)
+    self:setVisible(false)
+    if self.destroyOnClick then self:removeFromUIManager() end
+    if self.player and JoypadState.players[self.player + 1] then
+        setJoypadFocus(self.player, self.prevFocus)
+    elseif self.joyfocus and self.joyfocus.focus == self then
+        self.joyfocus.focus = self.prevFocus
+        updateJoypadFocus(self.joyfocus)
+    end
+end
+
 local function showAlert(title, body)
     local w, h = 420, 320
     local x = getCore():getScreenWidth()  / 2 - w / 2
@@ -46,38 +54,26 @@ local function showAlert(title, body)
     local modal = ISModalRichText:new(x, y, w, h, title .. "\n \n" .. body, false, nil, nil, 0)
     modal:initialise()
     modal:addToUIManager()
-    -- Fix: override destroy so closing the dialog does not unpause the game
-    modal.destroy = function(self)
-        UIManager.setShowPausedMessage(true)
-        self:setVisible(false)
-        if self.destroyOnClick then self:removeFromUIManager() end
-        if self.player and JoypadState.players[self.player + 1] then
-            setJoypadFocus(self.player, self.prevFocus)
-        elseif self.joyfocus and self.joyfocus.focus == self then
-            self.joyfocus.focus = self.prevFocus
-            updateJoypadFocus(self.joyfocus)
-        end
-    end
+    modal.destroy = destroyWithoutUnpause
 end
 
 local function alert(key, pauseKey, title, body)
-    if not (sv() and sv()[key]) then return end
+    local opts = sv()
+    if not (opts and opts[key]) then return end
     openHealthPanel()
     showAlert(title, body)
-    if sv()[pauseKey] then pauseGame() end
+    if opts[pauseKey] then pauseGame() end
 end
 
--- Fix: check both ZOMBIE_INFECTION and ZOMBIE_FEVER so Knox is detected
+-- Check both ZOMBIE_INFECTION and ZOMBIE_FEVER so Knox is detected
 -- even before fever symptoms fully develop
-local function isKnoxInfected(player)
-    local stats = player:getStats()
+local function isKnoxInfected(stats)
     return stats:get(CharacterStat.ZOMBIE_INFECTION) > 0
         or stats:get(CharacterStat.ZOMBIE_FEVER) > 0
 end
 
-local function checkSickness(player)
-    local sickLevel = player:getMoodles():getMoodleLevel(MoodleType.SICK)
-    local knox      = isKnoxInfected(player)
+local function checkSickness(moodles, stats)
+    local sickLevel = moodles:getMoodleLevel(MoodleType.SICK)
 
     if prevSickLevel < 3 and sickLevel >= 3 and sickLevel < 4 then
         alert("SickEnabled", "SickPause",
@@ -90,7 +86,7 @@ local function checkSickness(player)
     end
 
     if prevSickLevel < 4 and sickLevel >= 4 then
-        local advice = knox
+        local advice = isKnoxInfected(stats)
             and "Your skin feels like broken glass, and your head feels like it might explode. Your bones feel like they are on fire, but you shiver uncontrollably. Every step you take feels heavier and heavier still.\n\nYou need rest. Get inside. <RGB:0.5,0.5,0.5>Lock the door."
             or  "Take antibiotics. Rest in a warm, dry place."
         alert("FeverEnabled", "FeverPause", "You have a Fever", advice)
@@ -99,9 +95,9 @@ local function checkSickness(player)
     prevSickLevel = sickLevel
 end
 
-local function checkTemperature(player)
-    local hypo  = player:getMoodles():getMoodleLevel(MoodleType.HYPOTHERMIA)
-    local hyper = player:getMoodles():getMoodleLevel(MoodleType.HYPERTHERMIA)
+local function checkTemperature(moodles)
+    local hypo  = moodles:getMoodleLevel(MoodleType.HYPOTHERMIA)
+    local hyper = moodles:getMoodleLevel(MoodleType.HYPERTHERMIA)
 
     if hypo >= TEMP_DANGER_LEVEL and not hypoTriggered then
         hypoTriggered = true
@@ -128,27 +124,35 @@ local function checkTemperature(player)
     elseif hyper < TEMP_DANGER_LEVEL then
         hyperTriggered = false
     end
-
-    prevHypoLevel  = hypo
-    prevHyperLevel = hyper
 end
 
-local function isCriticalInjury(player)
-    initPartTables()
-    local bd = player:getBodyDamage()
-    for _, partType in ipairs(CRITICAL_HEAD_PARTS) do
-        local bp = bd:getBodyPart(partType)
+local function isCriticalInjury(bodyDamage)
+    for i = 1, #CRITICAL_HEAD_PARTS do
+        local bp = bodyDamage:getBodyPart(CRITICAL_HEAD_PARTS[i])
         if bp:bitten() or bp:deepWounded() or bp:bleeding() then return true end
     end
-    for _, partType in ipairs(CRITICAL_TORSO_PARTS) do
-        local bp = bd:getBodyPart(partType)
+    for i = 1, #CRITICAL_TORSO_PARTS do
+        local bp = bodyDamage:getBodyPart(CRITICAL_TORSO_PARTS[i])
         if bp:bitten() or bp:deepWounded() then return true end
     end
     return false
 end
 
-local function checkCriticalInjury(player)
-    local critical = isCriticalInjury(player)
+-- One pass over all body parts: lodged bullet, lodged glass, unbandaged burn
+local function scanBodyParts(bodyDamage)
+    local bullet, glass, burns = false, false, false
+    local bodyParts = bodyDamage:getBodyParts()
+    for i = 0, bodyParts:size() - 1 do
+        local bp = bodyParts:get(i)
+        if not bullet and bp:haveBullet() then bullet = true end
+        if not glass and bp:haveGlass() then glass = true end
+        if not burns and bp:getBurnTime() > 0 and not bp:bandaged() then burns = true end
+        if bullet and glass and burns then break end
+    end
+    return bullet, glass, burns
+end
+
+local function checkCriticalInjury(critical)
     if critical and not criticalInjuryTriggered then
         criticalInjuryTriggered = true
         alert("CriticalInjuryEnabled", "CriticalInjuryPause",
@@ -162,16 +166,7 @@ local function checkCriticalInjury(player)
     end
 end
 
-local function hasLodgedBullet(player)
-    local bodyParts = player:getBodyDamage():getBodyParts()
-    for i = 0, bodyParts:size() - 1 do
-        if bodyParts:get(i):haveBullet() then return true end
-    end
-    return false
-end
-
-local function checkLodgedBullet(player)
-    local bullet = hasLodgedBullet(player)
+local function checkLodgedBullet(bullet)
     if bullet and not bulletTriggered then
         bulletTriggered = true
         alert("LodgedBulletEnabled", "LodgedBulletPause",
@@ -185,16 +180,7 @@ local function checkLodgedBullet(player)
     end
 end
 
-local function hasLodgedGlass(player)
-    local bodyParts = player:getBodyDamage():getBodyParts()
-    for i = 0, bodyParts:size() - 1 do
-        if bodyParts:get(i):haveGlass() then return true end
-    end
-    return false
-end
-
-local function checkLodgedGlass(player)
-    local glass = hasLodgedGlass(player)
+local function checkLodgedGlass(glass)
     if glass and not glassTriggered then
         glassTriggered = true
         alert("LodgedGlassEnabled", "LodgedGlassPause",
@@ -208,17 +194,7 @@ local function checkLodgedGlass(player)
     end
 end
 
-local function hasBurns(player)
-    local bodyParts = player:getBodyDamage():getBodyParts()
-    for i = 0, bodyParts:size() - 1 do
-        local bp = bodyParts:get(i)
-        if bp:getBurnTime() > 0 and not bp:bandaged() then return true end
-    end
-    return false
-end
-
-local function checkBurns(player)
-    local burns = hasBurns(player)
+local function checkBurns(burns)
     if burns and not burnsTriggered then
         burnsTriggered = true
         alert("BurnsEnabled", "BurnsPause",
@@ -232,8 +208,8 @@ local function checkBurns(player)
     end
 end
 
-local function checkFoodPoisoning(player)
-    local level = player:getStats():get(CharacterStat.FOOD_SICKNESS)
+local function checkFoodPoisoning(stats)
+    local level = stats:get(CharacterStat.FOOD_SICKNESS)
     if level >= FOOD_SICKNESS_THRESHOLD and not foodPoisoningTriggered then
         foodPoisoningTriggered = true
         alert("FoodPoisoningEnabled", "FoodPoisoningPause",
@@ -248,8 +224,8 @@ local function checkFoodPoisoning(player)
     end
 end
 
-local function checkPoisoning(player)
-    local level = player:getStats():get(CharacterStat.POISON)
+local function checkPoisoning(stats)
+    local level = stats:get(CharacterStat.POISON)
     if level > 0 and not poisoningTriggered then
         poisoningTriggered = true
         alert("PoisoningEnabled", "PoisoningPause",
@@ -263,8 +239,8 @@ local function checkPoisoning(player)
     end
 end
 
-local function checkStarvation(player)
-    local level = player:getMoodles():getMoodleLevel(MoodleType.HUNGRY)
+local function checkStarvation(moodles)
+    local level = moodles:getMoodleLevel(MoodleType.HUNGRY)
     if level >= STARVING_MOODLE_LEVEL and not starvationTriggered then
         starvationTriggered = true
         alert("StarvationEnabled", "StarvationPause",
@@ -279,8 +255,8 @@ local function checkStarvation(player)
     end
 end
 
-local function checkDehydration(player)
-    local level = player:getMoodles():getMoodleLevel(MoodleType.THIRST)
+local function checkDehydration(moodles)
+    local level = moodles:getMoodleLevel(MoodleType.THIRST)
     if level >= STARVING_MOODLE_LEVEL and not dehydrationTriggered then
         dehydrationTriggered = true
         alert("DehydrationEnabled", "DehydrationPause",
@@ -295,39 +271,47 @@ local function checkDehydration(player)
 end
 
 local function onTick()
+    local now = getTimestampMs()
+    if now < nextCheckMs then return end
+    nextCheckMs = now + CHECK_INTERVAL_MS
+
     if isClient() or isServer() then return end
 
     local player = getSpecificPlayer(0)
     if not player or player:isDead() then return end
 
+    local moodles    = player:getMoodles()
+    local stats      = player:getStats()
+    local bodyDamage = player:getBodyDamage()
+    local critical   = isCriticalInjury(bodyDamage)
+    local bullet, glass, burns = scanBodyParts(bodyDamage)
+
     if not initialized then
-        prevSickLevel           = player:getMoodles():getMoodleLevel(MoodleType.SICK)
-        prevHypoLevel           = player:getMoodles():getMoodleLevel(MoodleType.HYPOTHERMIA)
-        prevHyperLevel          = player:getMoodles():getMoodleLevel(MoodleType.HYPERTHERMIA)
-        criticalInjuryTriggered = isCriticalInjury(player)
-        bulletTriggered         = hasLodgedBullet(player)
-        glassTriggered          = hasLodgedGlass(player)
-        burnsTriggered          = hasBurns(player)
-        foodPoisoningTriggered  = player:getStats():get(CharacterStat.FOOD_SICKNESS) >= FOOD_SICKNESS_THRESHOLD
-        poisoningTriggered      = player:getStats():get(CharacterStat.POISON) > 0
-        starvationTriggered     = player:getMoodles():getMoodleLevel(MoodleType.HUNGRY) >= STARVING_MOODLE_LEVEL
-        dehydrationTriggered    = player:getMoodles():getMoodleLevel(MoodleType.THIRST) >= STARVING_MOODLE_LEVEL
-        hypoTriggered           = player:getMoodles():getMoodleLevel(MoodleType.HYPOTHERMIA) >= TEMP_DANGER_LEVEL
-        hyperTriggered          = player:getMoodles():getMoodleLevel(MoodleType.HYPERTHERMIA) >= TEMP_DANGER_LEVEL
+        prevSickLevel           = moodles:getMoodleLevel(MoodleType.SICK)
+        criticalInjuryTriggered = critical
+        bulletTriggered         = bullet
+        glassTriggered          = glass
+        burnsTriggered          = burns
+        foodPoisoningTriggered  = stats:get(CharacterStat.FOOD_SICKNESS) >= FOOD_SICKNESS_THRESHOLD
+        poisoningTriggered      = stats:get(CharacterStat.POISON) > 0
+        starvationTriggered     = moodles:getMoodleLevel(MoodleType.HUNGRY) >= STARVING_MOODLE_LEVEL
+        dehydrationTriggered    = moodles:getMoodleLevel(MoodleType.THIRST) >= STARVING_MOODLE_LEVEL
+        hypoTriggered           = moodles:getMoodleLevel(MoodleType.HYPOTHERMIA) >= TEMP_DANGER_LEVEL
+        hyperTriggered          = moodles:getMoodleLevel(MoodleType.HYPERTHERMIA) >= TEMP_DANGER_LEVEL
         initialized             = true
         return
     end
 
-    checkSickness(player)
-    checkTemperature(player)
-    checkCriticalInjury(player)
-    checkLodgedBullet(player)
-    checkLodgedGlass(player)
-    checkBurns(player)
-    checkFoodPoisoning(player)
-    checkPoisoning(player)
-    checkStarvation(player)
-    checkDehydration(player)
+    checkSickness(moodles, stats)
+    checkTemperature(moodles)
+    checkCriticalInjury(critical)
+    checkLodgedBullet(bullet)
+    checkLodgedGlass(glass)
+    checkBurns(burns)
+    checkFoodPoisoning(stats)
+    checkPoisoning(stats)
+    checkStarvation(moodles)
+    checkDehydration(moodles)
 end
 
 Events.OnTick.Add(onTick)
