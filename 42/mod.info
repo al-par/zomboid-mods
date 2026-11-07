@@ -1,0 +1,4 @@
+name=Error Monitor
+id=ErrorMonitor
+description=Records every error and warning of a session, grouped and de-noised, plus frame times, hitches, freezes and Lua time per mod. The recording is a Java agent enabled by install.ps1 in the mod folder; this mod tells it the game state and active mods and shows new errors in game.
+modversion=1.0
