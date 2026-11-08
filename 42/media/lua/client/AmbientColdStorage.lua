@@ -1,18 +1,20 @@
 -- Sensible Refrigeration (Build 42, singleplayer)
 -- The AmbientColdStorage global, ModData key and SandboxVars keep the old mod's name: saves store them.
 --
--- Food on a square outside any building room (dropped on the ground, in bags,
--- crates, corpses, unpowered fridges..., including under porches and roof edges)
--- follows the outdoor air temperature:
+-- Food lying in the world (on the ground, in bags, crates, corpses, unpowered
+-- fridges, indoors or out) follows the air temperature of its square, as vanilla
+-- ClimateManager.getAirTemperatureForSquare() reports it:
 --   below ColdTemperature   -> spoils at the vanilla fridge rate; frozen food stays frozen
 --   below FreezeTemperature -> freezes over HoursToFreeze, frozen food does not spoil
 -- Frozen food only thaws once the air is at or above ColdTemperature.
 -- Food in a powered freezer (and optionally a powered fridge) does not spoil.
+-- Containers with their own temperature (powered fridges, lit stoves) are left to vanilla.
 --
 -- Vanilla Food.updateAge() keeps running untouched. Each pass lets vanilla catch
 -- the item up, then caps its age gain at what the temperature model allows and
--- writes back the modelled freezing progress. A saved clock accumulates hours
--- spent in each temperature band, so time spent unloaded is credited correctly.
+-- writes back the modelled freezing progress. Items visited within LIVE_HOURS use
+-- their square's current temperature. For longer gaps (unloaded, out of range), a
+-- saved clock per air class accumulates hours spent in each temperature band.
 
 if isClient() or isServer() then return end
 
@@ -64,23 +66,63 @@ local function bandFor(temp, opt)
     return WARM
 end
 
--- Global clock ---------------------------------------------------------------
+-- Air classes and clocks -----------------------------------------------------
+-- o: not in a room (outdoors, porches, under eaves); g: room on the ground floor;
+-- u: room on an upper floor. Each has its own cold/freeze hour counters in the
+-- saved clock; the outdoor ones keep their original field names.
+
+local LIVE_HOURS = 1.0
+
+local CLOCK_FIELDS = {
+    o = { "cold", "freeze" },
+    g = { "gcold", "gfreeze" },
+    u = { "ucold", "ufreeze" },
+}
+
+local function airClass(square)
+    if not square:isInARoom() then return "o" end
+    return square:getZ() < 1 and "g" or "u"
+end
+
+-- Vanilla ClimateManager.getAirTemperatureForSquare() for a room without heat
+-- sources. Vanilla scales by a lagged daylight value Lua can't read; the current
+-- daylight stands in for it.
+local function roomTemperature(outdoor, upper, gridPowered, daylight)
+    if outdoor > 22 then return outdoor end
+    local inside = gridPowered and 22 or outdoor
+    local gap = 22 - inside
+    if upper then gap = gap * 0.85 end
+    return inside + gap * (0.4 + 0.2 * daylight)
+end
+
+local function isGridPowered(now)
+    local so = getSandboxOptions()
+    local shut = so:getElecShutModifier()
+    return shut > -1 and now / 24 + (so:getTimeSinceApo() - 1) * 30 < shut
+end
 
 local clock
 
-local function advanceClock(now, band)
+local function advanceClock(now, bands)
     if not clock then
         clock = ModData.getOrCreate("AmbientColdStorage")
         if type(clock.t) ~= "number" then
             clock.t, clock.cold, clock.freeze = now, 0, 0
         end
+        for _, fields in pairs(CLOCK_FIELDS) do
+            for _, f in ipairs(fields) do
+                if type(clock[f]) ~= "number" then clock[f] = 0 end
+            end
+        end
     end
     local dt = now - clock.t
     if dt > 0 then
-        if band == FREEZE then
-            clock.freeze = clock.freeze + dt
-        elseif band == COLD then
-            clock.cold = clock.cold + dt
+        for cls, fields in pairs(CLOCK_FIELDS) do
+            if bands[cls] == COLD then
+                clock[fields[1]] = clock[fields[1]] + dt
+            elseif bands[cls] == FREEZE then
+                clock[fields[2]] = clock[fields[2]] + dt
+            end
         end
     end
     clock.t = now
@@ -100,12 +142,20 @@ local function context()
     local temp = cm and cm:getTemperature()
     if type(temp) ~= "number" then return nil end
     local opt = options()
-    local band = bandFor(temp, opt)
+    local powered = isGridPowered(now)
+    local daylight = cm:getDayLightStrength()
+    local bands = {
+        o = bandFor(temp, opt),
+        g = bandFor(roomTemperature(temp, false, powered, daylight), opt),
+        u = bandFor(roomTemperature(temp, true, powered, daylight), opt),
+    }
     cachedContext = {
         now = now,
-        band = band,
+        bands = bands,
+        climate = cm,
+        squareBands = {},
         opt = opt,
-        clock = advanceClock(now, band),
+        clock = advanceClock(now, bands),
         fridge = FRIDGE_FACTOR[tonumber(SandboxVars.FridgeFactor) or 3] or 0.2,
         rot = ROT_SPEED[tonumber(SandboxVars.FoodRotSpeed) or 3] or 1.0,
     }
@@ -215,26 +265,35 @@ local function advanceSegment(st, hours, mult, perHour)
     return agingHours * mult
 end
 
-local function snapshot(food, md, key, ctx)
+-- Snapshots without a class predate indoor support and were all outdoors.
+local function snapshot(food, md, key, cls, ctx)
+    local fields = CLOCK_FIELDS[cls]
     md[STATE] = {
         k = key, t = ctx.now, a = food:getAge(),
-        f = food:getFreezingTime(), z = food:isFrozen(),
-        cc = ctx.clock.cold, cf = ctx.clock.freeze,
+        f = food:getFreezingTime(), z = food:isFrozen(), c = cls,
+        cc = ctx.clock[fields[1]], cf = ctx.clock[fields[2]],
     }
 end
 
-local function applyOutdoorTemperature(food, md, key, ctx)
+local function applyAirTemperature(food, md, key, cls, band, ctx)
     food:updateAge()
     local age = food:getAge()
     local s = md[STATE]
-    if not s or s.k ~= key or ctx.now <= s.t or age < s.a - 0.0001 then
-        snapshot(food, md, key, ctx)
+    if not s or s.k ~= key or (s.c or "o") ~= cls or ctx.now <= s.t or age < s.a - 0.0001 then
+        snapshot(food, md, key, cls, ctx)
         return
     end
 
     local dt = ctx.now - s.t
-    local freezeH = clamp(ctx.clock.freeze - s.cf, 0, dt)
-    local coldH = clamp(ctx.clock.cold - s.cc, 0, dt - freezeH)
+    local freezeH, coldH
+    if dt <= LIVE_HOURS then
+        freezeH = band == FREEZE and dt or 0
+        coldH = band == COLD and dt or 0
+    else
+        local fields = CLOCK_FIELDS[cls]
+        freezeH = clamp(ctx.clock[fields[2]] - s.cf, 0, dt)
+        coldH = clamp(ctx.clock[fields[1]] - s.cc, 0, dt - freezeH)
+    end
     local canFreeze = food:canBeFrozen()
     local segments = {
         [WARM] = { dt - freezeH - coldH, 1.0, -100 / THAW_HOURS_OUTSIDE },
@@ -244,8 +303,8 @@ local function applyOutdoorTemperature(food, md, key, ctx)
 
     local st = { ft = s.f, frozen = s.z }
     local agingHours = 0
-    for _, band in ipairs(SEGMENT_ORDER[ctx.band]) do
-        local seg = segments[band]
+    for _, b in ipairs(SEGMENT_ORDER[band]) do
+        local seg = segments[b]
         if seg[1] > 0 then
             agingHours = agingHours + advanceSegment(st, seg[1], seg[2], seg[3])
         end
@@ -261,7 +320,17 @@ local function applyOutdoorTemperature(food, md, key, ctx)
         food:setFreezingTime(st.ft)
     end
 
-    snapshot(food, md, key, ctx)
+    snapshot(food, md, key, cls, ctx)
+end
+
+-- Band for the square right now, including nearby heat sources; cached per tick.
+local function squareBand(square, squareKey, ctx)
+    local band = ctx.squareBands[squareKey]
+    if not band then
+        band = bandFor(ctx.climate:getAirTemperatureForSquare(square), ctx.opt)
+        ctx.squareBands[squareKey] = band
+    end
+    return band
 end
 
 local function processFood(food)
@@ -275,13 +344,13 @@ local function processFood(food)
         return
     end
     md[HOLD], md[LEGACY_HOLD] = nil, nil
-    if not square or square:isInARoom()
-        or (container and vanillaControlsTemperature(container)) then
+    if not square or (container and vanillaControlsTemperature(container)) then
         md[STATE] = nil
         return
     end
-    local key = square:getX() .. "," .. square:getY() .. "," .. square:getZ() .. "|" .. path
-    applyOutdoorTemperature(food, md, key, ctx)
+    local squareKey = square:getX() .. "," .. square:getY() .. "," .. square:getZ()
+    applyAirTemperature(food, md, squareKey .. "|" .. path, airClass(square),
+        squareBand(square, squareKey, ctx), ctx)
 end
 
 -- Traversal ------------------------------------------------------------------
@@ -318,39 +387,29 @@ local function forget(item, depth)
     end
 end
 
--- Indoors only fridges and freezers matter; they are visited even when
--- unpowered so food that lost power stops being held.
-local function processObjectContainers(obj, outside)
+local function processObjectContainers(obj)
     for j = 0, obj:getContainerCount() - 1 do
         local container = obj:getContainerByIndex(j)
-        if container and (outside or container:isFreezer() or container:isFridge())
-            and not container:getItems():isEmpty() then
+        if container and not container:getItems():isEmpty() then
             processList(container:getItems(), 0)
         end
     end
 end
 
 local function scanSquare(sq)
-    -- isOutside() is false under any overhead tile (porch roofs, eaves); vanilla's
-    -- air temperature only treats room squares (map or player-built) as indoors.
-    local outside = not sq:isInARoom()
-    if outside then
-        local worldObjects = sq:getWorldObjects()
-        for i = 0, worldObjects:size() - 1 do
-            local item = worldObjects:get(i):getItem()
-            if item then processItem(item, 0) end
-        end
+    local worldObjects = sq:getWorldObjects()
+    for i = 0, worldObjects:size() - 1 do
+        local item = worldObjects:get(i):getItem()
+        if item then processItem(item, 0) end
     end
     local objects = sq:getObjects()
     for i = 0, objects:size() - 1 do
-        processObjectContainers(objects:get(i), outside)
+        processObjectContainers(objects:get(i))
     end
-    if outside then
-        -- Corpses live in this list rather than getObjects().
-        local moving = sq:getStaticMovingObjects()
-        for i = 0, moving:size() - 1 do
-            processObjectContainers(moving:get(i), true)
-        end
+    -- Corpses live in this list rather than getObjects().
+    local moving = sq:getStaticMovingObjects()
+    for i = 0, moving:size() - 1 do
+        processObjectContainers(moving:get(i))
     end
 end
 

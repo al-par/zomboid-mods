@@ -1,6 +1,6 @@
 """Runs AmbientColdStorage.lua against an emulation of vanilla Food aging (from 42.21 bytecode).
 
-Usage: python simulate_aging.py [path/to/AmbientColdStorage.lua] [swing|freeze|cold|warm]
+Usage: python simulate_aging.py [path/to/AmbientColdStorage.lua] [[room-]swing|freeze|deepfreeze|cold|warm]
 """
 import math, os, sys
 from lupa import LuaRuntime
@@ -29,7 +29,25 @@ function H.fire(name, ...) local l = {} for i, f in ipairs(Events[name].list) do
 local md = {}
 ModData = { getOrCreate = function(k) md[k] = md[k] or {}; return md[k] end }
 function getGameTime() return { getWorldAgeHours = function() return H.now end } end
-function getClimateManager() return { getTemperature = function() return H.temp end } end
+H.daylight = 0.5
+H.inRoom = false
+-- vanilla ClimateManager.getAirTemperatureForSquare (42.21), no heat sources, grid power off
+local function airTemperatureForSquare(sq)
+    local t = H.temp
+    if not sq:isInARoom() or t > 22 then return t end
+    local gap = 22 - t
+    if sq:getZ() >= 1 then gap = gap * 0.85 end
+    return t + gap * (0.4 + 0.2 * H.daylight)
+end
+local climate = {
+    getTemperature = function() return H.temp end,
+    getDayLightStrength = function() return H.daylight end,
+    getAirTemperatureForSquare = function(_, sq) return airTemperatureForSquare(sq) end,
+}
+function getClimateManager() return climate end
+function getSandboxOptions()
+    return { getElecShutModifier = function() return 14 end, getTimeSinceApo = function() return 1 end }
+end
 function triggerEvent(name, arg) H.fire(name, arg) end
 
 local function jlist(t)
@@ -118,9 +136,9 @@ local square = { x = 421, y = 9766, z = 0 }
 function square:getX() return 421 end
 function square:getY() return 9766 end
 function square:getZ() return 0 end
--- covered outdoor square (porch roof above): not "outside" for snow, but not in a room either
+-- covered outdoor square (porch roof above) by default; H.inRoom puts it in an unpowered room
 function square:isOutside() return false end
-function square:isInARoom() return false end
+function square:isInARoom() return H.inRoom end
 function square:getWorldObjects() return jlist(ground) end
 local crateObj = { getContainerCount = function() return 1 end, getContainerByIndex = function() return crate end,
                    getSquare = function() return square end }
@@ -155,10 +173,16 @@ lua.execute(open(MOD, encoding="utf-8").read())
 fire = H.fire
 
 MODE = sys.argv[2] if len(sys.argv) > 2 else "swing"
+# room-*: same weather, but the square is a ground-floor room in an unpowered building
+if MODE.startswith("room-"):
+    H.inRoom = True
+    MODE = MODE[5:]
 
 def temp_at(h):
     if MODE == "freeze":
         return -5
+    if MODE == "deepfreeze":
+        return -25
     if MODE == "cold":
         return 2
     if MODE == "warm":
