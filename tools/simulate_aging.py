@@ -118,7 +118,9 @@ local square = { x = 421, y = 9766, z = 0 }
 function square:getX() return 421 end
 function square:getY() return 9766 end
 function square:getZ() return 0 end
-function square:isOutside() return true end
+-- covered outdoor square (porch roof above): not "outside" for snow, but not in a room either
+function square:isOutside() return false end
+function square:isInARoom() return false end
 function square:getWorldObjects() return jlist(ground) end
 local crateObj = { getContainerCount = function() return 1 end, getContainerByIndex = function() return crate end,
                    getSquare = function() return square end }

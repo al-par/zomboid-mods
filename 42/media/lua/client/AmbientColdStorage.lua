@@ -1,8 +1,9 @@
 -- Sensible Refrigeration (Build 42, singleplayer)
 -- The AmbientColdStorage global, ModData key and SandboxVars keep the old mod's name: saves store them.
 --
--- Food on an outdoor square (dropped on the ground, in bags, crates, corpses,
--- unpowered fridges...) follows the outdoor air temperature:
+-- Food on a square outside any building room (dropped on the ground, in bags,
+-- crates, corpses, unpowered fridges..., including under porches and roof edges)
+-- follows the outdoor air temperature:
 --   below ColdTemperature   -> spoils at the vanilla fridge rate; frozen food stays frozen
 --   below FreezeTemperature -> freezes over HoursToFreeze, frozen food does not spoil
 -- Frozen food only thaws once the air is at or above ColdTemperature.
@@ -274,7 +275,7 @@ local function processFood(food)
         return
     end
     md[HOLD], md[LEGACY_HOLD] = nil, nil
-    if not square or not square:isOutside()
+    if not square or square:isInARoom()
         or (container and vanillaControlsTemperature(container)) then
         md[STATE] = nil
         return
@@ -330,7 +331,9 @@ local function processObjectContainers(obj, outside)
 end
 
 local function scanSquare(sq)
-    local outside = sq:isOutside()
+    -- isOutside() is false under any overhead tile (porch roofs, eaves); vanilla's
+    -- air temperature only treats room squares (map or player-built) as indoors.
+    local outside = not sq:isInARoom()
     if outside then
         local worldObjects = sq:getWorldObjects()
         for i = 0, worldObjects:size() - 1 do
