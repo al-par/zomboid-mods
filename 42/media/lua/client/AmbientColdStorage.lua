@@ -600,3 +600,18 @@ Events.OnGameStart.Add(function()
 end)
 
 Events.EveryTenMinutes.Add(ACS.scanAroundPlayers)
+
+-- ISInventoryPane calls updateAge() on every item it draws, every frame, so vanilla
+-- thaws a shown container visibly between sweeps; re-apply the model to it each minute.
+Events.EveryOneMinute.Add(function()
+    if not started then return end
+    for p = 0, getNumActivePlayers() - 1 do
+        local loot = getPlayerLoot(p)
+        local inv = loot and not loot.isCollapsed and loot.inventoryPane.inventory
+        if inv then processList(inv:getItems(), 0) end
+    end
+    if changed then
+        changed = false
+        triggerEvent("OnContainerUpdate")
+    end
+end)
