@@ -590,8 +590,17 @@ Events.OnContainerUpdate.Add(function(arg)
     inContainerUpdate = false
 end)
 
+-- Defined by the optional SensibleRefrigerationZB jar (ZombieBuddy). It makes vanilla's own
+-- freeze/thaw decision follow these thresholds, so the per-minute loot pass below is not needed.
+local javaFreezing = false
+
 Events.OnGameStart.Add(function()
     started = true
+    if SensibleRefrigerationZB_configure then
+        local opt = options()
+        javaFreezing = SensibleRefrigerationZB_configure(opt.cold, opt.freeze) == true
+        print("[SensibleRefrigeration] ZombieBuddy freeze/thaw hooks " .. (javaFreezing and "active" or "did not confirm"))
+    end
     if queueTail >= queueHead then
         queueBudget = math.max(MIN_SQUARES_PER_TICK, math.ceil((queueTail - queueHead + 1) / SWEEP_TICKS))
         startTicking()
@@ -604,7 +613,7 @@ Events.EveryTenMinutes.Add(ACS.scanAroundPlayers)
 -- ISInventoryPane calls updateAge() on every item it draws, every frame, so vanilla
 -- thaws a shown container visibly between sweeps; re-apply the model to it each minute.
 Events.EveryOneMinute.Add(function()
-    if not started then return end
+    if not started or javaFreezing then return end
     for p = 0, getNumActivePlayers() - 1 do
         local loot = getPlayerLoot(p)
         local inv = loot and not loot.isCollapsed and loot.inventoryPane.inventory
