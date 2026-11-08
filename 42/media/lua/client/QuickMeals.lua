@@ -35,12 +35,21 @@ local function countExtraItems(base)
     return counts, total
 end
 
+local function spiceLimitReached(base)
+    local vars = SandboxVars.QuickMeals
+    if not vars or not vars.SpiceLimitEnabled then return false end
+    local spices = instanceof(base, "Food") and base:getSpices()
+    local count = spices and spices:size() or 0
+    return count >= vars.SpiceLimit
+end
+
 -- Groups what the recipe accepts right now by full type: ingredients and spices separately.
 function QuickMeals.collect(playerObj, recipe, base, containers)
     local excluded = getExcluded()
     local ingredients, spices = {}, {}
     local _, extraCount = countExtraItems(base)
     local slotsLeft = recipe:getMaxItems() - extraCount
+    local spicesAllowed = not spiceLimitReached(base)
     local seen = {}
     local candidates = recipe:getItemsCanBeUse(playerObj, base, containers)
     for i = 0, candidates:size() - 1 do
@@ -54,7 +63,7 @@ function QuickMeals.collect(playerObj, recipe, base, containers)
             seen[id] = true
             local bucket = nil
             if isSpice(item) then
-                bucket = spices
+                if spicesAllowed then bucket = spices end
             elseif slotsLeft > 0 then
                 bucket = ingredients
             end

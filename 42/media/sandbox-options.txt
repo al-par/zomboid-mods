@@ -7,3 +7,21 @@ option QuickMeals.ExcludedItems
 	page = QuickMeals,
 	translation = QuickMeals_ExcludedItems,
 }
+
+option QuickMeals.SpiceLimitEnabled
+{
+	type = boolean,
+	default = true,
+	page = QuickMeals,
+	translation = QuickMeals_SpiceLimitEnabled,
+}
+
+option QuickMeals.SpiceLimit
+{
+	type = integer,
+	min = 1,
+	max = 100,
+	default = 6,
+	page = QuickMeals,
+	translation = QuickMeals_SpiceLimit,
+}
