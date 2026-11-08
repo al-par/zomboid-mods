@@ -11,7 +11,7 @@ option QuickMeals.ExcludedItems
 option QuickMeals.SpiceLimitEnabled
 {
 	type = boolean,
-	default = true,
+	default = false,
 	page = QuickMeals,
 	translation = QuickMeals_SpiceLimitEnabled,
 }
