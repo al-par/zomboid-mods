@@ -1,4 +1,4 @@
--- Pooled Generator Power: fuel barrels.
+-- Sensible Power Management: fuel barrels.
 --
 -- Vanilla metal barrels and drums get a fluid container, so they can hold petrol and feed plumbed
 -- generators. A barrel is carried as a two-handed heavy item whose contents live in its mod data

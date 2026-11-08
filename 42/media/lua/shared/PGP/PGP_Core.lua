@@ -1,4 +1,6 @@
--- Pooled Generator Power: shared data model, placement rules and extended power range.
+-- Sensible Power Management: shared data model, placement rules and extended power range.
+-- The ModData key, SandboxVars.PooledGeneratorPower, the PGP_ items and the tile pack keep the old
+-- Pooled Generator Power names: existing saves store them.
 --
 -- Global ModData (server-authoritative, transmitted to clients):
 --   pools[poolId]  = { id, load, members = { ["x,y,z"] = { x, y, z, running, raw, ... } } }

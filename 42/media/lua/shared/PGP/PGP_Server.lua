@@ -1,4 +1,4 @@
--- Pooled Generator Power: authoritative logic (single player host or dedicated server).
+-- Sensible Power Management: authoritative logic (single player host or dedicated server).
 require "PGP/PGP_Core"
 
 if isClient() then return end

@@ -1,5 +1,5 @@
-name=Pooled Generator Power
-id=PooledGeneratorPower
+name=Sensible Power Management
+id=SensiblePowerManagement
 description=Plumb generators to petrol barrels like a sink, link touching generators into a shared fuel pool, split building load evenly between pools, and stretch a pool's power range with makeshift extension cables. Vanilla draw and consumption rates.
 pack=PooledGeneratorPower
 tiledef=PooledGeneratorPower 6143
