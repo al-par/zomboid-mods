@@ -1,0 +1,9 @@
+VERSION = 1,
+
+option QuickMeals.ExcludedItems
+{
+	type = string,
+	default = Base.Salt;Base.Butter;Base.Margarine;Base.Lard;Base.OilVegetable;Base.OilOlive;Base.SesameOil;Base.Sugar;Base.SugarBrown;Base.Flour2;Base.Cornflour2;Base.Cornmeal2,
+	page = QuickMeals,
+	translation = QuickMeals_ExcludedItems,
+}

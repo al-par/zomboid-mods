@@ -1,0 +1,5 @@
+{
+    "Sandbox_QuickMeals": "Quick Meals",
+    "Sandbox_QuickMeals_ExcludedItems": "Never add automatically",
+    "Sandbox_QuickMeals_ExcludedItems_tooltip": "Items Quick Prepare never adds, as spices or as ingredients. Separate entries with ; or a comma. Use full ids (Base.Salt) or bare names (Salt). You can still add these by hand."
+}

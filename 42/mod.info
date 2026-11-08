@@ -1,0 +1,4 @@
+name=Quick Meals
+id=QuickMeals
+description=Adds a Quick Prepare option to every evolved recipe (stews, soups, salads, sandwiches, pies and the rest). One click adds one of each available ingredient at random until the recipe is full, then one of each available spice. Items listed in the sandbox options are never added automatically.
+modversion=1.0
