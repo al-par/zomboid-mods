@@ -3,12 +3,18 @@ local TEMP_DANGER_LEVEL       = 3
 local FOOD_SICKNESS_THRESHOLD = 50
 local STARVING_MOODLE_LEVEL   = 4
 
+local STYLE_NONE, STYLE_SIMPLIFIED, STYLE_FULL = 1, 2, 3
+
 local CRITICAL_HEAD_PARTS  = { BodyPartType.Neck, BodyPartType.Head }
 local CRITICAL_TORSO_PARTS = { BodyPartType.Torso_Upper, BodyPartType.Torso_Lower }
+
+local TOAST_BACKGROUND = { r = 0.15, g = 0,   b = 0,   a = 0.92 }
+local TOAST_BORDER     = { r = 0.8,  g = 0.2, b = 0.2, a = 1 }
 
 local initialized             = false
 local nextCheckMs             = 0
 local prevSickLevel           = 0
+local lowHealthTriggered      = false
 local criticalInjuryTriggered = false
 local bulletTriggered         = false
 local glassTriggered          = false
@@ -20,7 +26,12 @@ local dehydrationTriggered    = false
 local hypoTriggered           = false
 local hyperTriggered          = false
 
-local function sv() return SandboxVars.HealthWarningsFull end
+local function sv() return SandboxVars.HealthWarnings end
+
+local function style()
+    local opts = sv()
+    return (opts and opts.Style) or STYLE_FULL
+end
 
 local function pauseGame()
     local sc = UIManager.getSpeedControls()
@@ -57,11 +68,43 @@ local function showAlert(title, body)
     modal.destroy = destroyWithoutUnpause
 end
 
-local function alert(key, pauseKey, title, body)
+local function toastOnMouseDown(self, mx, my)
+    self:removeFromUIManager()
+    return true
+end
+
+local function toastRender(self)
+    ISPanel.render(self)
+    self:drawTextCentre(self.msg, self.width / 2, 12, 1, 0.4, 0.4, 1, UIFont.Small)
+end
+
+-- A panel instead of HaloText so the message stays visible while paused
+local function showToast(msg)
+    local fh    = getTextManager():getFontHeight(UIFont.Small)
+    local w     = math.max(300, getTextManager():MeasureStringX(UIFont.Small, msg) + 40)
+    local h     = fh + 24
+    local x     = getCore():getScreenWidth()  / 2 - w / 2
+    local y     = 60
+    local toast = ISPanel:new(x, y, w, h)
+    toast.backgroundColor = TOAST_BACKGROUND
+    toast.borderColor     = TOAST_BORDER
+    toast.msg             = msg
+    toast:initialise()
+    toast:addToUIManager()
+    toast.onMouseDown = toastOnMouseDown
+    toast.render      = toastRender
+end
+
+local function alert(key, pauseKey, short, title, body)
     local opts = sv()
-    if not (opts and opts[key]) then return end
+    local mode = style()
+    if mode == STYLE_NONE or not (opts and opts[key]) then return end
     openHealthPanel()
-    showAlert(title, body)
+    if mode == STYLE_SIMPLIFIED then
+        showToast(short)
+    else
+        showAlert(title, body)
+    end
     if opts[pauseKey] then pauseGame() end
 end
 
@@ -72,11 +115,23 @@ local function isKnoxInfected(stats)
         or stats:get(CharacterStat.ZOMBIE_FEVER) > 0
 end
 
+local function checkLowHealth(health)
+    local opts = sv()
+    local threshold = (opts and opts.LowHealthThreshold) or 20
+    if health <= threshold and not lowHealthTriggered then
+        lowHealthTriggered = true
+        if not opts or opts.LowHealthPause ~= false then pauseGame() end
+    elseif health > threshold then
+        lowHealthTriggered = false
+    end
+end
+
 local function checkSickness(moodles, stats)
     local sickLevel = moodles:getMoodleLevel(MoodleType.SICK)
 
     if prevSickLevel < 3 and sickLevel >= 3 and sickLevel < 4 then
         alert("SickEnabled", "SickPause",
+            "You are now Sick.",
             "You are now Sick",
             "Your condition has worsened.\n" ..
             "\nTake antibiotics. Rest." ..
@@ -89,7 +144,7 @@ local function checkSickness(moodles, stats)
         local advice = isKnoxInfected(stats)
             and "Your skin feels like broken glass, and your head feels like it might explode. Your bones feel like they are on fire, but you shiver uncontrollably. Every step you take feels heavier and heavier still.\n\nYou need rest. Get inside. <RGB:0.5,0.5,0.5>Lock the door."
             or  "Take antibiotics. Rest in a warm, dry place."
-        alert("FeverEnabled", "FeverPause", "You have a Fever", advice)
+        alert("FeverEnabled", "FeverPause", "You have a Fever.", "You have a Fever", advice)
     end
 
     prevSickLevel = sickLevel
@@ -102,6 +157,7 @@ local function checkTemperature(moodles)
     if hypo >= TEMP_DANGER_LEVEL and not hypoTriggered then
         hypoTriggered = true
         alert("TemperatureEnabled", "TemperaturePause",
+            "Hypothermia — warm up now.",
             "Hypothermia Warning",
             "Your body temperature is dangerously low.\n" ..
             "\nPut on dry, warm clothing." ..
@@ -115,6 +171,7 @@ local function checkTemperature(moodles)
     if hyper >= TEMP_DANGER_LEVEL and not hyperTriggered then
         hyperTriggered = true
         alert("TemperatureEnabled", "TemperaturePause",
+            "Overheating — cool down now.",
             "Overheating",
             "Your body temperature is dangerously high.\n" ..
             "\nRemove excess clothing." ..
@@ -156,6 +213,7 @@ local function checkCriticalInjury(critical)
     if critical and not criticalInjuryTriggered then
         criticalInjuryTriggered = true
         alert("CriticalInjuryEnabled", "CriticalInjuryPause",
+            "Critical injury — bandage immediately.",
             "CRITICAL: Vital Area Injury",
             "You have a serious injury to a vital area (neck, head, or torso).\n" ..
             "\nBandage it immediately." ..
@@ -170,6 +228,7 @@ local function checkLodgedBullet(bullet)
     if bullet and not bulletTriggered then
         bulletTriggered = true
         alert("LodgedBulletEnabled", "LodgedBulletPause",
+            "Lodged bullet — use forceps to remove.",
             "Lodged Bullet",
             "You have a bullet lodged in your body.\n" ..
             "\nYou need forceps to remove it." ..
@@ -184,6 +243,7 @@ local function checkLodgedGlass(glass)
     if glass and not glassTriggered then
         glassTriggered = true
         alert("LodgedGlassEnabled", "LodgedGlassPause",
+            "Lodged glass — remove with tweezers or by hand.",
             "Lodged Glass",
             "You have glass shards lodged in your body.\n" ..
             "\nRemove them with tweezers or by hand." ..
@@ -198,6 +258,7 @@ local function checkBurns(burns)
     if burns and not burnsTriggered then
         burnsTriggered = true
         alert("BurnsEnabled", "BurnsPause",
+            "Burn injury — clean and bandage the wound.",
             "Burn Injury",
             "You have sustained a burn injury.\n" ..
             "\nOpen the health panel to clean the burn, then bandage it." ..
@@ -213,6 +274,7 @@ local function checkFoodPoisoning(stats)
     if level >= FOOD_SICKNESS_THRESHOLD and not foodPoisoningTriggered then
         foodPoisoningTriggered = true
         alert("FoodPoisoningEnabled", "FoodPoisoningPause",
+            "Food poisoning — take charcoal tablets.",
             "Food Poisoning",
             "You have significant food poisoning.\n" ..
             "\nTake charcoal tablets if available." ..
@@ -229,6 +291,7 @@ local function checkPoisoning(stats)
     if level > 0 and not poisoningTriggered then
         poisoningTriggered = true
         alert("PoisoningEnabled", "PoisoningPause",
+            "You are poisoned — take charcoal tablets.",
             "Poisoning Detected",
             "You have been poisoned.\n" ..
             "\nTake charcoal tablets immediately if available." ..
@@ -244,6 +307,7 @@ local function checkStarvation(moodles)
     if level >= STARVING_MOODLE_LEVEL and not starvationTriggered then
         starvationTriggered = true
         alert("StarvationEnabled", "StarvationPause",
+            "Critically starving — eat food immediately.",
             "Critically Starving",
             "You are critically starving and losing health.\n" ..
             "\nEat any food you have immediately." ..
@@ -260,6 +324,7 @@ local function checkDehydration(moodles)
     if level >= STARVING_MOODLE_LEVEL and not dehydrationTriggered then
         dehydrationTriggered = true
         alert("DehydrationEnabled", "DehydrationPause",
+            "Critically dehydrated — drink water immediately.",
             "Critically Dehydrated",
             "You are critically dehydrated and losing health.\n" ..
             "\nCheck sinks, water bottles, or rain collectors." ..
@@ -283,11 +348,14 @@ local function onTick()
     local moodles    = player:getMoodles()
     local stats      = player:getStats()
     local bodyDamage = player:getBodyDamage()
+    local health     = bodyDamage:getOverallBodyHealth()
     local critical   = isCriticalInjury(bodyDamage)
     local bullet, glass, burns = scanBodyParts(bodyDamage)
 
     if not initialized then
+        local opts = sv()
         prevSickLevel           = moodles:getMoodleLevel(MoodleType.SICK)
+        lowHealthTriggered      = health <= ((opts and opts.LowHealthThreshold) or 20)
         criticalInjuryTriggered = critical
         bulletTriggered         = bullet
         glassTriggered          = glass
@@ -302,6 +370,7 @@ local function onTick()
         return
     end
 
+    checkLowHealth(health)
     checkSickness(moodles, stats)
     checkTemperature(moodles)
     checkCriticalInjury(critical)
