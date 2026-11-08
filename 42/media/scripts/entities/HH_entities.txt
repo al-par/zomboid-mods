@@ -1,0 +1,797 @@
+module Base
+{
+    xuiSkin default
+    {
+        entity ES_HH_Hood3_Brick
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Hooded Hearth, 3 Wide (Brick),
+            Icon = Build_HH_Hood3_Brick,
+        }
+        entity ES_HH_Hood3_Stone
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Hooded Hearth, 3 Wide (Stone),
+            Icon = Build_HH_Hood3_Stone,
+        }
+        entity ES_HH_Hood2_Brick
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Hooded Hearth, 2 Wide (Brick),
+            Icon = Build_HH_Hood2_Brick,
+        }
+        entity ES_HH_Hood2_Stone
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Hooded Hearth, 2 Wide (Stone),
+            Icon = Build_HH_Hood2_Stone,
+        }
+        entity ES_HH_Range3_Brick
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Raised Hearth, 3 Wide (Brick),
+            Icon = Build_HH_Range3_Brick,
+        }
+        entity ES_HH_Range3_Stone
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Raised Hearth, 3 Wide (Stone),
+            Icon = Build_HH_Range3_Stone,
+        }
+        entity ES_HH_Range2_Brick
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Raised Hearth, 2 Wide (Brick),
+            Icon = Build_HH_Range2_Brick,
+        }
+        entity ES_HH_Range2_Stone
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Raised Hearth, 2 Wide (Stone),
+            Icon = Build_HH_Range2_Stone,
+        }
+        entity ES_HH_Oven3_Brick
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Bake-Oven Hearth, 3 Wide (Brick),
+            Icon = Build_HH_Oven3_Brick,
+        }
+        entity ES_HH_Oven3_Stone
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Bake-Oven Hearth, 3 Wide (Stone),
+            Icon = Build_HH_Oven3_Stone,
+        }
+        entity ES_HH_Oven2_Brick
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Bake-Oven Hearth, 2 Wide (Brick),
+            Icon = Build_HH_Oven2_Brick,
+        }
+        entity ES_HH_Oven2_Stone
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Bake-Oven Hearth, 2 Wide (Stone),
+            Icon = Build_HH_Oven2_Stone,
+        }
+        entity ES_HH_CoalHeater
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Coal Heater,
+            Icon = Build_HH_CoalHeater,
+        }
+        entity ES_HH_ElectricHeater
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Electric Heater,
+            Icon = Build_HH_ElectricHeater,
+        }
+        entity ES_HH_PotBar
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Hearth Pot Bar,
+            Icon = Build_HH_PotBar,
+        }
+    }
+
+    entity HH_Hood3_Brick
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Hood3_Brick,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_hood3_brick_rough_0 homeheating_hood3_brick_rough_1 homeheating_hood3_brick_rough_2,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_hood3_brick_rough_16,
+                    row = homeheating_hood3_brick_rough_17,
+                    row = homeheating_hood3_brick_rough_18,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 400,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_hoodDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 6 tags[base:concrete] flags[DontRecordInput],
+                item 18 [Base.ClayBrick],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Hood3_Stone
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Hood3_Stone,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_hood3_stone_rough_0 homeheating_hood3_stone_rough_1 homeheating_hood3_stone_rough_2,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_hood3_stone_rough_16,
+                    row = homeheating_hood3_stone_rough_17,
+                    row = homeheating_hood3_stone_rough_18,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 400,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_hoodDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 6 tags[base:concrete] flags[DontRecordInput],
+                item 15 [Base.StoneBlock],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Hood2_Brick
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Hood2_Brick,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_hood2_brick_rough_0 homeheating_hood2_brick_rough_1,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_hood2_brick_rough_16,
+                    row = homeheating_hood2_brick_rough_17,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 300,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_hoodDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 4 tags[base:concrete] flags[DontRecordInput],
+                item 12 [Base.ClayBrick],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Hood2_Stone
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Hood2_Stone,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_hood2_stone_rough_0 homeheating_hood2_stone_rough_1,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_hood2_stone_rough_16,
+                    row = homeheating_hood2_stone_rough_17,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 300,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_hoodDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 4 tags[base:concrete] flags[DontRecordInput],
+                item 10 [Base.StoneBlock],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Range3_Brick
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Range3_Brick,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_range3_brick_rough_0 homeheating_range3_brick_rough_1 homeheating_range3_brick_rough_2,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_range3_brick_rough_16,
+                    row = homeheating_range3_brick_rough_17,
+                    row = homeheating_range3_brick_rough_18,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 400,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_rangeDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 6 tags[base:concrete] flags[DontRecordInput],
+                item 18 [Base.ClayBrick],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Range3_Stone
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Range3_Stone,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_range3_stone_rough_0 homeheating_range3_stone_rough_1 homeheating_range3_stone_rough_2,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_range3_stone_rough_16,
+                    row = homeheating_range3_stone_rough_17,
+                    row = homeheating_range3_stone_rough_18,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 400,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_rangeDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 6 tags[base:concrete] flags[DontRecordInput],
+                item 15 [Base.StoneBlock],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Range2_Brick
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Range2_Brick,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_range2_brick_rough_0 homeheating_range2_brick_rough_1,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_range2_brick_rough_16,
+                    row = homeheating_range2_brick_rough_17,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 300,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_rangeDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 4 tags[base:concrete] flags[DontRecordInput],
+                item 12 [Base.ClayBrick],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Range2_Stone
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Range2_Stone,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_range2_stone_rough_0 homeheating_range2_stone_rough_1,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_range2_stone_rough_16,
+                    row = homeheating_range2_stone_rough_17,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 300,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_rangeDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 4 tags[base:concrete] flags[DontRecordInput],
+                item 10 [Base.StoneBlock],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Oven3_Brick
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Oven3_Brick,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_oven3_brick_rough_0 homeheating_oven3_brick_rough_1 homeheating_oven3_brick_rough_2,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_oven3_brick_rough_16,
+                    row = homeheating_oven3_brick_rough_17,
+                    row = homeheating_oven3_brick_rough_18,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 400,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_ovenDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 6 tags[base:concrete] flags[DontRecordInput],
+                item 18 [Base.ClayBrick],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Oven3_Stone
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Oven3_Stone,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_oven3_stone_rough_0 homeheating_oven3_stone_rough_1 homeheating_oven3_stone_rough_2,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_oven3_stone_rough_16,
+                    row = homeheating_oven3_stone_rough_17,
+                    row = homeheating_oven3_stone_rough_18,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 400,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_ovenDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 6 tags[base:concrete] flags[DontRecordInput],
+                item 15 [Base.StoneBlock],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Oven2_Brick
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Oven2_Brick,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_oven2_brick_rough_0 homeheating_oven2_brick_rough_1,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_oven2_brick_rough_16,
+                    row = homeheating_oven2_brick_rough_17,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 300,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_ovenDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 4 tags[base:concrete] flags[DontRecordInput],
+                item 12 [Base.ClayBrick],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_Oven2_Stone
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_Oven2_Stone,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.hearthOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_oven2_stone_rough_0 homeheating_oven2_stone_rough_1,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_oven2_stone_rough_16,
+                    row = homeheating_oven2_stone_rough_17,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 300,
+            category = Masonry,
+            SkillRequired = Masonry:4,
+            xpAward = Masonry:40,
+            Tooltip = Tooltip_craft_HH_ovenDesc,
+            inputs
+            {
+                item 1 tags[base:masonstrowel] mode:keep flags[Prop1;MayDegradeLight],
+                item 4 tags[base:concrete] flags[DontRecordInput],
+                item 10 [Base.StoneBlock],
+                item 1 [Base.MetalBar],
+            }
+        }
+    }
+    entity HH_CoalHeater
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_CoalHeater,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.coalOnCreate,
+            face W
+            {
+                layer
+                {
+                    row = homeheating_misc_3,
+                }
+            }
+            face N
+            {
+                layer
+                {
+                    row = homeheating_misc_0,
+                }
+            }
+            face E
+            {
+                layer
+                {
+                    row = homeheating_misc_1,
+                }
+            }
+            face S
+            {
+                layer
+                {
+                    row = homeheating_misc_2,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildMetalStructureMedium,
+            time = 300,
+            SkillRequired = MetalWelding:6,
+            xpAward = MetalWelding:40,
+            category = Welding,
+            Tags = Welding,
+            Tooltip = Tooltip_craft_HH_coalHeaterDesc,
+            inputs
+            {
+                item 6 [Base.BlowTorch] flags[DontRecordInput],
+                item 1 tags[base:weldingmask] mode:keep,
+                item 1 [Base.MetalDrum],
+                item 1 [Base.Pot;Base.PotForged;Base.Saucepan;Base.SaucepanCopper;Base.Kettle;Base.BucketEmpty;Base.BucketForged],
+                item 1 [Base.SheetMetal],
+                item 2 [Base.SmallSheetMetal],
+                item 2 [Base.Hinge],
+                item 2 [Base.MetalBar],
+                item 1 [Base.MetalPipe],
+                item 6 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+    }
+    entity HH_ElectricHeater
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_ElectricHeater,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnCreate = HomeHeating.Build.electricOnCreate,
+            face W
+            {
+                layer
+                {
+                    row = homeheating_misc_11,
+                }
+            }
+            face N
+            {
+                layer
+                {
+                    row = homeheating_misc_8,
+                }
+            }
+            face E
+            {
+                layer
+                {
+                    row = homeheating_misc_9,
+                }
+            }
+            face S
+            {
+                layer
+                {
+                    row = homeheating_misc_10,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildLowNoTool,
+            time = 250,
+            SkillRequired = Electricity:5,
+            xpAward = Electricity:40,
+            category = Miscellaneous,
+            Tooltip = Tooltip_craft_HH_electricHeaterDesc,
+            inputs
+            {
+                item 1 tags[base:screwdriver] mode:keep flags[MayDegradeLight],
+                item 1 tags[base:pliers] mode:keep flags[MayDegradeLight],
+                item 1 [Base.BlowerFan],
+                item 2 [Base.SheetMetal],
+                item 2 [Base.SmallSheetMetal],
+                item 5 [Base.Wire],
+                item 6 [Base.ElectricWire],
+                item 6 [Base.ElectronicsScrap],
+                item 10 [Base.Screws],
+            }
+        }
+    }
+    entity HH_PotBar
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_HH_PotBar,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            OnIsValid = HomeHeating.Build.potBarOnIsValid,
+            OnCreate = HomeHeating.Build.potBarOnCreate,
+            face N
+            {
+                layer
+                {
+                    row = homeheating_misc_16,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = homeheating_misc_17,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallNoTool,
+            time = 120,
+            category = Masonry,
+            Tooltip = Tooltip_craft_HH_potBarDesc,
+            inputs
+            {
+                item 2 [Base.SteelBar],
+                item 1 [Base.LargeHook],
+            }
+        }
+    }
+}
