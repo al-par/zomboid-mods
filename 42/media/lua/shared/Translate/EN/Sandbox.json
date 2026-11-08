@@ -1,7 +1,7 @@
 {
   "Sandbox_AmbientColdStorage": "Sensible Refrigeration",
   "Sandbox_ACS_ColdTemperature": "Refrigerate Below (C)",
-  "Sandbox_ACS_ColdTemperature_tooltip": "Outdoor air temperature below which food left outside spoils at the fridge rate (uses the vanilla Refrigeration Effectiveness setting). Default: 4.",
+  "Sandbox_ACS_ColdTemperature_tooltip": "Outdoor air temperature below which food left outside spoils at the fridge rate (uses the vanilla Refrigeration Effectiveness setting). Frozen food left outside stays frozen until the air reaches this temperature. Default: 4.",
   "Sandbox_ACS_FreezeTemperature": "Freeze Below (C)",
   "Sandbox_ACS_FreezeTemperature_tooltip": "Outdoor air temperature below which food left outside freezes. Frozen food does not spoil. Default: 0.",
   "Sandbox_ACS_HoursToFreeze": "Hours To Freeze",

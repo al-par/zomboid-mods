@@ -3,8 +3,9 @@
 --
 -- Food on an outdoor square (dropped on the ground, in bags, crates, corpses,
 -- unpowered fridges...) follows the outdoor air temperature:
---   below ColdTemperature   -> spoils at the vanilla fridge rate
+--   below ColdTemperature   -> spoils at the vanilla fridge rate; frozen food stays frozen
 --   below FreezeTemperature -> freezes over HoursToFreeze, frozen food does not spoil
+-- Frozen food only thaws once the air is at or above ColdTemperature.
 -- Food in a powered freezer (and optionally a powered fridge) does not spoil.
 --
 -- Vanilla Food.updateAge() keeps running untouched. Each pass lets vanilla catch
@@ -26,9 +27,8 @@ local LEGACY_HOLD = "FreezerNoSpoil_age"
 local WARM, COLD, FREEZE = 1, 2, 3
 local MAX_DEPTH = 8
 
--- Vanilla Food.updateFreezing() thaw times (hours from fully frozen to thawed).
+-- Vanilla Food.updateFreezing() thaw time outside a powered fridge (hours from fully frozen to thawed).
 local THAW_HOURS_OUTSIDE = 1.5
-local THAW_HOURS_FRIDGE = 3.0
 
 -- Vanilla Food.getFridgeFactor() / getFoodRotSpeed(), keyed by sandbox value.
 local FRIDGE_FACTOR = { 0.4, 0.3, 0.2, 0.1, 0.03, 0.0 }
@@ -178,11 +178,13 @@ local function holdAge(food, md)
 end
 
 -- Advances freezing state st = { ft, frozen } by `hours` at `perHour` freezing
--- points per hour (negative thaws). Returns spoilage hours, already scaled by
--- `mult`; vanilla food does not age at all while its frozen flag is set.
+-- points per hour (negative thaws, 0 holds). Returns spoilage hours, already
+-- scaled by `mult`; vanilla food does not age at all while its frozen flag is set.
 local function advanceSegment(st, hours, mult, perHour)
     local agingHours
-    if perHour > 0 then
+    if perHour == 0 then
+        agingHours = st.frozen and 0 or hours
+    elseif perHour > 0 then
         if st.frozen then
             agingHours = 0
             st.ft = math.min(100, st.ft + perHour * hours)
@@ -235,9 +237,8 @@ local function applyOutdoorTemperature(food, md, key, ctx)
     local canFreeze = food:canBeFrozen()
     local segments = {
         [WARM] = { dt - freezeH - coldH, 1.0, -100 / THAW_HOURS_OUTSIDE },
-        [COLD] = { coldH, ctx.fridge, -100 / THAW_HOURS_FRIDGE },
-        [FREEZE] = { freezeH, ctx.fridge,
-            canFreeze and 100 / ctx.opt.hoursToFreeze or -100 / THAW_HOURS_FRIDGE },
+        [COLD] = { coldH, ctx.fridge, 0 },
+        [FREEZE] = { freezeH, ctx.fridge, canFreeze and 100 / ctx.opt.hoursToFreeze or 0 },
     }
 
     local st = { ft = s.f, frozen = s.z }
