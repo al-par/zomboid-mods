@@ -1,4 +1,5 @@
--- Ambient Cold Storage (Build 42, singleplayer)
+-- Sensible Refrigeration (Build 42, singleplayer)
+-- The AmbientColdStorage global, ModData key and SandboxVars keep the old mod's name: saves store them.
 --
 -- Food on an outdoor square (dropped on the ground, in bags, crates, corpses,
 -- unpowered fridges...) follows the outdoor air temperature:
