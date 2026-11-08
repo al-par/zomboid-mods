@@ -15,7 +15,7 @@ final class Config {
         "# Error Monitor settings. Changes apply the next time the game starts.",
         "",
         "# Session folders to keep. The oldest are deleted at launch.",
-        "keepSessions=30",
+        "keepSessions=3",
         "",
         "# A log line that repeats is written in full this many times. After that its copies are",
         "# counted, and session.log gets one summary of the counts every collapseSummarySeconds.",
@@ -77,7 +77,7 @@ final class Config {
     final int jfrKeepSessions;
 
     private Config(Properties p) {
-        keepSessions = intValue(p, "keepSessions", 30, 1, 10000);
+        keepSessions = intValue(p, "keepSessions", 3, 1, 10000);
         repeatsBeforeCollapse = intValue(p, "repeatsBeforeCollapse", 3, 1, 1000);
         collapseSummaryMillis = intValue(p, "collapseSummarySeconds", 60, 5, 86400) * 1000L;
         repeatResetMillis = intValue(p, "repeatResetMinutes", 10, 1, 1440) * 60_000L;
