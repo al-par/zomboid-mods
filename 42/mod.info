@@ -1,8 +1,8 @@
-name=Crafted Archery
-id=CraftedArchery
+name=Sensible Archery
+id=SensibleArchery
 description=Craft a wooden bow and feather-fletched arrows from B42 materials: saplings, sinew, flint, bone, scrap metal and chicken or turkey feathers.
+description=Learn the recipes from the Primitive Archery magazine, which turns up exactly as often as the generator magazine.
 description=The bow uses the vanilla aiming, reload and Aiming skill systems. Arrows that hit can often be recovered from the corpse.
-description=Models and icons are from Mandela's Bow and Arrow (Workshop 2208315526). Personal use only.
 icon=icon.png
-modversion=1.0
+modversion=2.0
 versionMin=42.13

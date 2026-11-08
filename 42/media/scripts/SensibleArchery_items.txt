@@ -1,5 +1,20 @@
 module Base
 {
+    item CA_ArcheryMag
+    {
+        DisplayCategory = RecipeResource,
+        ItemType = base:literature,
+        Weight = 0.5,
+        Icon = CA_ArcheryMag,
+        BoredomChange = -20,
+        StressChange = -15,
+        LearnedRecipes = CA_CarveBowStave;CA_TwistBowstring;CA_StringBow;CA_CarveArrowShafts;CA_KnapFlintArrowheads;CA_CarveBoneArrowheads;CA_FileMetalArrowheads;CA_FletchArrow,
+        StaticModel = Magazine,
+        WorldStaticModel = MagazineGround,
+        Tags = base:magazine,
+        OnCreate = ItemCodeOnCreate.onCreateRecipeMagazine,
+    }
+
     item CA_BowStave
     {
         DisplayCategory = Material,

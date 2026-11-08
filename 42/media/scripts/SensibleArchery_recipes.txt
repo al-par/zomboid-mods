@@ -2,6 +2,7 @@ module Base
 {
     craftRecipe CA_CarveBowStave
     {
+        NeedToBeLearn = true,
         timedAction = SharpenStakeWood,
         time = 400,
         Tags = InHandCraft,
@@ -21,6 +22,7 @@ module Base
 
     craftRecipe CA_TwistBowstring
     {
+        NeedToBeLearn = true,
         timedAction = Making,
         time = 180,
         Tags = AnySurfaceCraft,
@@ -38,6 +40,7 @@ module Base
 
     craftRecipe CA_StringBow
     {
+        NeedToBeLearn = true,
         timedAction = CraftWeapon2H,
         time = 120,
         Tags = InHandCraft,
@@ -75,6 +78,7 @@ module Base
 
     craftRecipe CA_CarveArrowShafts
     {
+        NeedToBeLearn = true,
         timedAction = SharpenStakeWood,
         time = 150,
         Tags = InHandCraft,
@@ -94,6 +98,7 @@ module Base
 
     craftRecipe CA_KnapFlintArrowheads
     {
+        NeedToBeLearn = true,
         timedAction = HammerStoneStanding,
         time = 230,
         Tags = AnySurfaceCraft,
@@ -113,6 +118,7 @@ module Base
 
     craftRecipe CA_CarveBoneArrowheads
     {
+        NeedToBeLearn = true,
         timedAction = SharpenStakeBone,
         time = 200,
         Tags = AnySurfaceCraft,
@@ -133,6 +139,7 @@ module Base
 
     craftRecipe CA_FileMetalArrowheads
     {
+        NeedToBeLearn = true,
         timedAction = CraftWeapon1H,
         time = 300,
         Tags = InHandCraft,
@@ -151,6 +158,7 @@ module Base
 
     craftRecipe CA_FletchArrow
     {
+        NeedToBeLearn = true,
         timedAction = Making,
         time = 100,
         Tags = AnySurfaceCraft,
