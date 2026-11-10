@@ -1,0 +1,10 @@
+name=Debug Hotkeys Fix (ZombieBuddy)
+id=DebugHotkeysFix
+description=Needs the ZombieBuddy Java mod loader. In debug mode, Build 42.22 treats Left Ctrl plus A, D, R, S, V or Z as multiplayer test hotkeys even in single player. Left Ctrl is the default Aim key, so aiming while walking can spawn a bull (which crashes single player), set your health to 0, or spawn a horde. This turns those hotkeys off in single player only.
+require=ZombieBuddy
+loadModAfter=ZombieBuddy
+javaJarFile=media/java/DebugHotkeysFix.jar
+javaPkgName=debughotkeysfix
+ZBVersionMin=2.3.0
+ZBVersionMax=2.99.99
+modversion=1.0
