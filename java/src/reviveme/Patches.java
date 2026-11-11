@@ -1,4 +1,4 @@
-package revivegil;
+package reviveme;
 
 import java.util.ArrayList;
 import me.zed_0xff.zombie_buddy.Patch;

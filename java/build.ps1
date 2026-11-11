@@ -1,4 +1,4 @@
-# Builds 42\media\java\ReviveGil.jar. Needs a JDK 25+ (javac must read the game's
+# Builds 42\media\java\ReviveMe.jar. Needs a JDK 25+ (javac must read the game's
 # Java 25 class files) and ZombieBuddy.jar in the game folder, which ZombieBuddy's install puts there.
 param(
     [string]$GameDir = "C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid",
@@ -9,7 +9,7 @@ $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 $build = Join-Path $root "build"
 $classes = Join-Path $build "classes"
-$output = Join-Path $root "..\42\media\java\ReviveGil.jar"
+$output = Join-Path $root "..\42\media\java\ReviveMe.jar"
 $gameJar = Join-Path $GameDir "projectzomboid.jar"
 $zbJar = Join-Path $GameDir "ZombieBuddy.jar"
 

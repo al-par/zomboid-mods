@@ -5,7 +5,7 @@
 -- (items in hand drop to the floor instead). The corpse keeps the SurvivorDesc, so match by name.
 
 if not ZombieBuddy then
-    print("[ReviveGil] ZombieBuddy isn't running; dead characters can't be loaded")
+    print("[ReviveMe] ZombieBuddy isn't running; dead characters can't be loaded")
 end
 
 local SEARCH_RADIUS = 5
@@ -79,7 +79,7 @@ local function takeGearFromCorpse(player, body)
     if hotbar then hotbar.needsRefresh = true end
     triggerEvent("OnClothingUpdated", player)
 
-    print("[ReviveGil] took back " .. #items .. " items (" .. #worn .. " worn, " .. #attached .. " attached) from the corpse")
+    print("[ReviveMe] took back " .. #items .. " items (" .. #worn .. " worn, " .. #attached .. " attached) from the corpse")
 end
 
 local function onTick()
@@ -88,18 +88,18 @@ local function onTick()
     local player = getPlayer()
     if not player then return end
     local modData = player:getModData()
-    if not modData.ReviveGilPendingGear then
+    if not modData.ReviveMePendingGear then
         Events.OnTick.Remove(onTick)
         return
     end
     local body = findOwnCorpse(player)
     if body then
         takeGearFromCorpse(player, body)
-        modData.ReviveGilPendingGear = nil
+        modData.ReviveMePendingGear = nil
         Events.OnTick.Remove(onTick)
     elseif tickCount >= GIVE_UP_TICKS then
-        print("[ReviveGil] no corpse named " .. player:getDescriptor():getForename() .. " " .. player:getDescriptor():getSurname() .. " within " .. SEARCH_RADIUS .. " tiles; gear not restored")
-        modData.ReviveGilPendingGear = nil
+        print("[ReviveMe] no corpse named " .. player:getDescriptor():getForename() .. " " .. player:getDescriptor():getSurname() .. " within " .. SEARCH_RADIUS .. " tiles; gear not restored")
+        modData.ReviveMePendingGear = nil
         Events.OnTick.Remove(onTick)
     end
 end
@@ -109,10 +109,10 @@ local function onCreatePlayer(playerIndex, player)
     if player:isDead() then
         player:getBodyDamage():RestoreToFullHealth()
         player:setHealth(1.0)
-        modData.ReviveGilPendingGear = true
-        print("[ReviveGil] revived " .. player:getDescriptor():getForename() .. " " .. player:getDescriptor():getSurname())
+        modData.ReviveMePendingGear = true
+        print("[ReviveMe] revived " .. player:getDescriptor():getForename() .. " " .. player:getDescriptor():getSurname())
     end
-    if modData.ReviveGilPendingGear then
+    if modData.ReviveMePendingGear then
         tickCount = 0
         Events.OnTick.Add(onTick)
     end

@@ -1,8 +1,8 @@
-name=Revive Gil
-id=ReviveGil
-description=Dying isn't final. Quit to the main menu after your character dies and load the save again: he's back alive at full health, wearing and carrying everything from his corpse, and the corpse is gone. Items that were in his hands drop to the floor where he died. Nothing happens during play, only on load. Needs the ZombieBuddy Java mod loader; without it this mod does nothing.
-javaJarFile=media/java/ReviveGil.jar
-javaPkgName=revivegil
+name=Revive Me
+id=ReviveMe
+description=Dying isn't final. Quit to the main menu after your character dies and load the save again: you're back alive at full health, wearing and carrying everything from your corpse, and the corpse is gone. Items that were in your hands drop to the floor where you died. Nothing happens during play, only on load. Needs the ZombieBuddy Java mod loader; without it this mod does nothing.
+javaJarFile=media/java/ReviveMe.jar
+javaPkgName=reviveme
 ZBVersionMin=2.3.0
 ZBVersionMax=2.99.99
 modversion=1.0

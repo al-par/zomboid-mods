@@ -1,4 +1,4 @@
-package revivegil;
+package reviveme;
 
 import java.io.File;
 import java.sql.Connection;
@@ -25,10 +25,10 @@ public final class Revive {
                 if (!rs.next()) return false;
             }
         } catch (Exception e) {
-            DebugLog.log("[ReviveGil] couldn't read " + dbFile + ": " + e);
+            DebugLog.log("[ReviveMe] couldn't read " + dbFile + ": " + e);
             return false;
         }
-        DebugLog.log("[ReviveGil] treating the dead main player in " + saveDir + " as alive");
+        DebugLog.log("[ReviveMe] treating the dead main player in " + saveDir + " as alive");
         return true;
     }
 
