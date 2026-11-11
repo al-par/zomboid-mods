@@ -26,13 +26,21 @@ local function isSpice(item)
     return item:getScriptItem():isSpice()
 end
 
-local function isPerishable(item)
-    return instanceof(item, "Food") and item:getOffAgeMax() < NEVER_ROTS
+-- Days left before the item is rotten; NEVER_ROTS for shelf-stable items.
+local function daysLeft(item)
+    if not instanceof(item, "Food") or item:getOffAgeMax() >= NEVER_ROTS then return NEVER_ROTS end
+    return item:getOffAgeMax() - item:getAge()
 end
 
-local function spoilProgress(item)
-    if not isPerishable(item) or item:getOffAgeMax() <= 0 then return 0 end
-    return item:getAge() / item:getOffAgeMax()
+local function isRotten(item)
+    return instanceof(item, "Food") and item:isRotten()
+end
+
+-- True when a should be used before b: not rotten first, then the fewest days left.
+local function usesSooner(a, b)
+    local ra, rb = isRotten(a), isRotten(b)
+    if ra ~= rb then return rb end
+    return daysLeft(a) < daysLeft(b)
 end
 
 local function countExtraItems(base)
@@ -93,43 +101,31 @@ local function randomEntry(list)
     return list[ZombRand(#list) + 1]
 end
 
--- Perishable types before shelf-stable ones, random within each group.
-local function chooseType(types, byType)
-    local perishable, stable = {}, {}
-    for _, fullType in ipairs(types) do
-        if isPerishable(byType[fullType][1]) then
-            table.insert(perishable, fullType)
-        else
-            table.insert(stable, fullType)
-        end
-    end
-    if #perishable > 0 then return randomEntry(perishable) end
-    return randomEntry(stable)
-end
-
--- Not rotten first, then closest to spoiling, then already in the player's inventory.
+-- The instance to use first; among equals, one already in the player's inventory.
 local function chooseInstance(items, playerObj)
     local inv = playerObj:getInventory()
-    local best, bestRotten, bestProgress, bestAway = nil, nil, nil, nil
+    local best = nil
     for _, item in ipairs(items) do
-        local rotten = (instanceof(item, "Food") and item:isRotten()) and 1 or 0
-        local progress = spoilProgress(item)
-        local away = inv:contains(item) and 0 or 1
-        local better = false
-        if not best then
-            better = true
-        elseif rotten ~= bestRotten then
-            better = rotten < bestRotten
-        elseif progress ~= bestProgress then
-            better = progress > bestProgress
-        else
-            better = away < bestAway
-        end
-        if better then
-            best, bestRotten, bestProgress, bestAway = item, rotten, progress, away
+        if not best or usesSooner(item, best)
+                or (not usesSooner(best, item) and inv:contains(item) and not inv:contains(best)) then
+            best = item
         end
     end
     return best
+end
+
+-- The type whose best instance spoils soonest; random among ties (e.g. all shelf-stable).
+local function chooseType(types, byType, playerObj)
+    local soonest, soonestItem = {}, nil
+    for _, fullType in ipairs(types) do
+        local item = chooseInstance(byType[fullType], playerObj)
+        if not soonestItem or usesSooner(item, soonestItem) then
+            soonest, soonestItem = { fullType }, item
+        elseif not usesSooner(soonestItem, item) then
+            table.insert(soonest, fullType)
+        end
+    end
+    return randomEntry(soonest)
 end
 
 function QuickMeals.pickNext(playerObj, recipe, base, containers, session)
@@ -146,7 +142,7 @@ function QuickMeals.pickNext(playerObj, recipe, base, containers, session)
         end
     end
     if #leastUsed > 0 then
-        return chooseInstance(ingredients[chooseType(leastUsed, ingredients)], playerObj)
+        return chooseInstance(ingredients[chooseType(leastUsed, ingredients, playerObj)], playerObj)
     end
 
     local spiceTypes = {}
@@ -156,7 +152,7 @@ function QuickMeals.pickNext(playerObj, recipe, base, containers, session)
         end
     end
     if #spiceTypes > 0 then
-        local fullType = chooseType(spiceTypes, spices)
+        local fullType = chooseType(spiceTypes, spices, playerObj)
         session.triedSpices[fullType] = true
         return chooseInstance(spices[fullType], playerObj)
     end
