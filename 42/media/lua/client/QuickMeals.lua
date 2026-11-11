@@ -1,7 +1,11 @@
+require "TimedActions/ISBaseTimedAction"
+
 QuickMeals = QuickMeals or {}
 
 -- Hard stop for one Quick Prepare chain, in case an add ever fails to change the meal.
 local MAX_STEPS = 64
+-- Food:getOffAgeMax() for items with no DaysTotallyRotten (canned, dried, oils): they never spoil.
+local NEVER_ROTS = 1000000000
 
 local function getExcluded()
     local raw = SandboxVars.QuickMeals and SandboxVars.QuickMeals.ExcludedItems or ""
@@ -20,6 +24,15 @@ local function isSpice(item)
         return item:isSpice()
     end
     return item:getScriptItem():isSpice()
+end
+
+local function isPerishable(item)
+    return instanceof(item, "Food") and item:getOffAgeMax() < NEVER_ROTS
+end
+
+local function spoilProgress(item)
+    if not isPerishable(item) or item:getOffAgeMax() <= 0 then return 0 end
+    return item:getAge() / item:getOffAgeMax()
 end
 
 local function countExtraItems(base)
@@ -80,21 +93,43 @@ local function randomEntry(list)
     return list[ZombRand(#list) + 1]
 end
 
--- Fresh items in the player's own inventory first; random among equals.
-local function chooseInstance(items, playerObj)
-    local inv = playerObj:getInventory()
-    local best, bestScore = {}, nil
-    for _, item in ipairs(items) do
-        local score = 0
-        if instanceof(item, "Food") and item:isRotten() then score = score + 2 end
-        if not inv:contains(item) then score = score + 1 end
-        if not bestScore or score < bestScore then
-            best, bestScore = { item }, score
-        elseif score == bestScore then
-            table.insert(best, item)
+-- Perishable types before shelf-stable ones, random within each group.
+local function chooseType(types, byType)
+    local perishable, stable = {}, {}
+    for _, fullType in ipairs(types) do
+        if isPerishable(byType[fullType][1]) then
+            table.insert(perishable, fullType)
+        else
+            table.insert(stable, fullType)
         end
     end
-    return randomEntry(best)
+    if #perishable > 0 then return randomEntry(perishable) end
+    return randomEntry(stable)
+end
+
+-- Not rotten first, then closest to spoiling, then already in the player's inventory.
+local function chooseInstance(items, playerObj)
+    local inv = playerObj:getInventory()
+    local best, bestRotten, bestProgress, bestAway = nil, nil, nil, nil
+    for _, item in ipairs(items) do
+        local rotten = (instanceof(item, "Food") and item:isRotten()) and 1 or 0
+        local progress = spoilProgress(item)
+        local away = inv:contains(item) and 0 or 1
+        local better = false
+        if not best then
+            better = true
+        elseif rotten ~= bestRotten then
+            better = rotten < bestRotten
+        elseif progress ~= bestProgress then
+            better = progress > bestProgress
+        else
+            better = away < bestAway
+        end
+        if better then
+            best, bestRotten, bestProgress, bestAway = item, rotten, progress, away
+        end
+    end
+    return best
 end
 
 function QuickMeals.pickNext(playerObj, recipe, base, containers, session)
@@ -111,7 +146,7 @@ function QuickMeals.pickNext(playerObj, recipe, base, containers, session)
         end
     end
     if #leastUsed > 0 then
-        return chooseInstance(ingredients[randomEntry(leastUsed)], playerObj)
+        return chooseInstance(ingredients[chooseType(leastUsed, ingredients)], playerObj)
     end
 
     local spiceTypes = {}
@@ -121,15 +156,24 @@ function QuickMeals.pickNext(playerObj, recipe, base, containers, session)
         end
     end
     if #spiceTypes > 0 then
-        local fullType = randomEntry(spiceTypes)
+        local fullType = chooseType(spiceTypes, spices)
         session.triedSpices[fullType] = true
         return chooseInstance(spices[fullType], playerObj)
     end
     return nil
 end
 
--- Runs from ISQueueActionsAction:start(), after the previous add's complete(), so the
--- base item is current even when the first add replaced a water pot with a pot of stew.
+local function recipeApplies(playerObj, recipe, base, containers)
+    local list = RecipeManager.getEvolvedRecipe(base, playerObj, containers, false)
+    local name = recipe:getUntranslatedName()
+    for i = 0, list:size() - 1 do
+        if list:get(i):getUntranslatedName() == name then return true end
+    end
+    return false
+end
+
+-- Plans one ingredient (or spice) and queues the actions for it, then another step.
+-- Called from QuickMealsStepAction:update(), so the previous add's complete() has run.
 function QuickMeals.step(playerObj, session)
     if session.lastAction then
         session.baseItem = session.lastAction.baseItem
@@ -140,12 +184,27 @@ function QuickMeals.step(playerObj, session)
 
     local base = session.baseItem
     local inv = playerObj:getInventory()
-    if not base or not inv:contains(base) then return end
+    if not base then return end
+    local containers = ISInventoryPaneContextMenu.getContainers(playerObj)
+
+    if not session.started then
+        session.started = true
+        if not recipeApplies(playerObj, session.recipe, base, containers) then return end
+        if not inv:contains(base) then
+            if not base:getContainer() then return end
+            ISTimedActionQueue.add(ISInventoryTransferUtil.newInventoryTransferAction(playerObj, base, base:getContainer(), inv, nil))
+            if instanceof(base, "Food") then
+                base:setChef(playerObj:getUsername())
+            end
+            ISTimedActionQueue.add(QuickMealsStepAction:new(playerObj, session))
+            return
+        end
+    end
+    if not inv:contains(base) then return end
 
     local _, extraTotal = countExtraItems(base)
     if session.expectExtraAbove and extraTotal <= session.expectExtraAbove then return end
 
-    local containers = ISInventoryPaneContextMenu.getContainers(playerObj)
     local usedItem = QuickMeals.pickNext(playerObj, session.recipe, base, containers, session)
     if not usedItem then return end
     session.expectExtraAbove = (not isSpice(usedItem)) and extraTotal or nil
@@ -164,20 +223,64 @@ function QuickMeals.step(playerObj, session)
     if transferred then
         ISCraftingUI.ReturnItemToOriginalContainer(playerObj, usedItem)
     end
-    ISTimedActionQueue.queueActions(playerObj, QuickMeals.step, session)
+    ISTimedActionQueue.add(QuickMealsStepAction:new(playerObj, session))
 end
 
-function QuickMeals.onQuickPrepare(recipe, baseItem, player)
-    local playerObj = getSpecificPlayer(player)
-    local inv = playerObj:getInventory()
-    if not inv:contains(baseItem) then
-        ISTimedActionQueue.add(ISInventoryTransferUtil.newInventoryTransferAction(playerObj, baseItem, baseItem:getContainer(), inv, nil))
-        if instanceof(baseItem, "Food") then
-            baseItem:setChef(playerObj:getUsername())
-        end
+-- Like ISQueueActionsAction, but plans in update() instead of start(). start() can run inside
+-- the previous action's perform(), before its complete() has added the last ingredient.
+-- It always finishes with forceComplete(): forceStop() would reset the whole queue, including
+-- any other Quick Prepares queued behind this one.
+QuickMealsStepAction = ISBaseTimedAction:derive("QuickMealsStepAction")
+
+function QuickMealsStepAction:isValid()
+    return true
+end
+
+function QuickMealsStepAction:waitToStart()
+    return false
+end
+
+function QuickMealsStepAction:start()
+end
+
+function QuickMealsStepAction:update()
+    if self.planned then
+        -- QuickMeals.step raised an error last frame; let the queue move on.
+        self:endAddingActions()
+        self:forceComplete()
+        return
     end
-    local session = { recipe = recipe, baseItem = baseItem, steps = 0, triedSpices = {} }
-    ISTimedActionQueue.queueActions(playerObj, QuickMeals.step, session)
+    self.planned = true
+    self:beginAddingActions()
+    QuickMeals.step(self.character, self.session)
+    self:endAddingActions()
+    self:forceComplete()
+end
+
+function QuickMealsStepAction:stop()
+    ISBaseTimedAction.stop(self)
+end
+
+function QuickMealsStepAction:perform()
+    ISBaseTimedAction.perform(self)
+end
+
+function QuickMealsStepAction:new(character, session)
+    local o = ISBaseTimedAction.new(self, character)
+    o.session = session
+    o.stopOnAim = false
+    o.stopOnWalk = false
+    o.stopOnRun = false
+    o.maxTime = -1
+    return o
+end
+
+function QuickMeals.onQuickPrepare(recipe, bases, player)
+    local playerObj = getSpecificPlayer(player)
+    for _, base in ipairs(bases) do
+        local session = { recipe = recipe, baseItem = base, steps = 0, triedSpices = {} }
+        ISTimedActionQueue.add(QuickMealsStepAction:new(playerObj, session))
+    end
 end
 
 local function findUnusedOption(context, name, used)
@@ -208,6 +311,21 @@ function QuickMeals.onFillMenu(player, context, items)
     end
     if not evorecipe or evorecipe:isEmpty() then return end
 
+    local bases = {}
+    local baseType = baseItem:getFullType()
+    for _, item in ipairs(ISInventoryPane.getActualItems(items)) do
+        if item:getFullType() == baseType and not item:isNoRecipes(playerObj) then
+            table.insert(bases, item)
+        end
+    end
+    if #bases == 0 then
+        bases = { baseItem }
+    end
+    local label = getText("ContextMenu_QuickMeals_QuickPrepare")
+    if #bases > 1 then
+        label = getText("ContextMenu_QuickMeals_QuickPrepareCount", #bases)
+    end
+
     local used = {}
     for i = 0, evorecipe:size() - 1 do
         local recipe = evorecipe:get(i)
@@ -227,7 +345,7 @@ function QuickMeals.onFillMenu(player, context, items)
             for _ in pairs(ingredients) do typeCount = typeCount + 1 end
             for _ in pairs(spices) do spiceCount = spiceCount + 1 end
             if typeCount > 0 or spiceCount > 0 then
-                local quick = subMenu:addOptionOnTop(getText("ContextMenu_QuickMeals_QuickPrepare"), recipe, QuickMeals.onQuickPrepare, baseItem, player)
+                local quick = subMenu:addOptionOnTop(label, recipe, QuickMeals.onQuickPrepare, bases, player)
                 local tooltip = ISInventoryPaneContextMenu.addToolTip()
                 tooltip.description = getText("Tooltip_QuickMeals_QuickPrepare", math.max(slotsLeft, 0), typeCount)
                 quick.toolTip = tooltip
