@@ -275,10 +275,18 @@ local function snapshot(food, md, key, cls, ctx)
     }
 end
 
+-- Set when the optional SensibleRefrigerationZB jar confirmed its no-thaw hook.
+local javaHooks = false
+
 local function applyAirTemperature(food, md, key, cls, band, ctx)
-    food:updateAge()
-    local age = food:getAge()
     local s = md[STATE]
+    -- Over a long gap vanilla must catch up as vanilla (it thaws, so it ages at least as much
+    -- as the model); the hook would judge the whole gap by today's air and skip the spoilage.
+    local catchUp = javaHooks and (not s or ctx.now - s.t > LIVE_HOURS)
+    if catchUp then SensibleRefrigerationZB_suspend(true) end
+    food:updateAge()
+    if catchUp then SensibleRefrigerationZB_suspend(false) end
+    local age = food:getAge()
     if not s or s.k ~= key or (s.c or "o") ~= cls or ctx.now <= s.t or age < s.a - 0.0001 then
         snapshot(food, md, key, cls, ctx)
         return
@@ -590,16 +598,14 @@ Events.OnContainerUpdate.Add(function(arg)
     inContainerUpdate = false
 end)
 
--- Defined by the optional SensibleRefrigerationZB jar (ZombieBuddy). It makes vanilla's own
--- freeze/thaw decision follow these thresholds, so the per-minute loot pass below is not needed.
-local javaFreezing = false
-
+-- SensibleRefrigerationZB_* are defined by the optional SensibleRefrigerationZB jar (ZombieBuddy).
+-- It stops vanilla thawing frozen food in cold air between the passes below.
 Events.OnGameStart.Add(function()
     started = true
-    if SensibleRefrigerationZB_configure then
+    if SensibleRefrigerationZB_configure and SensibleRefrigerationZB_suspend then
         local opt = options()
-        javaFreezing = SensibleRefrigerationZB_configure(opt.cold, opt.freeze) == true
-        print("[SensibleRefrigeration] ZombieBuddy freeze/thaw hooks " .. (javaFreezing and "active" or "did not confirm"))
+        javaHooks = SensibleRefrigerationZB_configure(opt.cold, opt.freeze) == true
+        print("[SensibleRefrigeration] ZombieBuddy no-thaw hook " .. (javaHooks and "active" or "did not confirm"))
     end
     if queueTail >= queueHead then
         queueBudget = math.max(MIN_SQUARES_PER_TICK, math.ceil((queueTail - queueHead + 1) / SWEEP_TICKS))
@@ -610,10 +616,11 @@ end)
 
 Events.EveryTenMinutes.Add(ACS.scanAroundPlayers)
 
--- ISInventoryPane calls updateAge() on every item it draws, every frame, so vanilla
--- thaws a shown container visibly between sweeps; re-apply the model to it each minute.
+-- ISInventoryPane calls updateAge() on every item it draws, every frame, so a shown container
+-- drifts from the model between sweeps (vanilla thaws it unless the jar is active, and freezing
+-- progress only moves on our passes); re-apply the model to it each minute.
 Events.EveryOneMinute.Add(function()
-    if not started or javaFreezing then return end
+    if not started then return end
     for p = 0, getNumActivePlayers() - 1 do
         local loot = getPlayerLoot(p)
         local inv = loot and not loot.isCollapsed and loot.inventoryPane.inventory

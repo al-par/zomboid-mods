@@ -1,6 +1,6 @@
 name=Sensible Refrigeration (ZombieBuddy)
 id=SensibleRefrigerationZB
-description=Optional add-on for Sensible Refrigeration. Needs the ZombieBuddy Java mod loader. Makes the game's own freeze and thaw follow the air temperature, so frozen food in cold air no longer briefly thaws while its container is open. Enable it alongside Sensible Refrigeration; without ZombieBuddy, use Sensible Refrigeration alone.
+description=Optional add-on for Sensible Refrigeration. Needs the ZombieBuddy Java mod loader. Stops the game thawing frozen food that sits in cold air, so it no longer briefly thaws while its container is open. Enable it alongside Sensible Refrigeration; without ZombieBuddy, use Sensible Refrigeration alone.
 require=SensibleRefrigeration,ZombieBuddy
 loadModAfter=SensibleRefrigeration,ZombieBuddy
 javaJarFile=media/java/SensibleRefrigerationZB.jar

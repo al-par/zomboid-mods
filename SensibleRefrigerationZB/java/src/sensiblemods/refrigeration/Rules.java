@@ -12,34 +12,37 @@ import zombie.characters.IsoGameCharacter;
 import zombie.vehicles.BaseVehicle;
 
 /**
- * Thresholds come from Sensible Refrigeration's Lua (its sandbox options), which stays the
- * source of truth for spoilage. Until Lua configures them, every patch leaves vanilla alone.
+ * The threshold comes from Sensible Refrigeration's Lua (its sandbox options), which stays the
+ * source of truth for spoilage. Until Lua configures it, the patch leaves vanilla alone.
  */
 public final class Rules {
     private static volatile boolean configured;
+    private static volatile boolean suspended;
     private static volatile float coldBelow;
-    private static volatile float freezeBelow;
 
     /** Called from Lua; its presence also tells Lua that the Java part loaded. */
     @LuaMethod(name = "SensibleRefrigerationZB_configure", global = true)
     public static boolean configure(double cold, double freeze) {
         coldBelow = (float) cold;
-        freezeBelow = (float) freeze;
         configured = true;
         return true;
     }
 
-    /** Public because the patches' advice is inlined into Food, outside this package. */
-    public static boolean keepsFrozen(Food food) {
-        if (!configured) return false;
-        IsoGridSquare square = worldSquare(food);
-        return square != null && ClimateManager.getInstance().getAirTemperatureForSquare(square) < coldBelow;
+    /**
+     * Lua turns the hook off while vanilla catches an item up over a long gap: today's air says
+     * nothing about the days in between, and the Lua model replays those itself.
+     */
+    @LuaMethod(name = "SensibleRefrigerationZB_suspend", global = true)
+    public static boolean suspend(boolean on) {
+        suspended = on;
+        return true;
     }
 
-    public static boolean freezes(Food food) {
-        if (!configured) return false;
+    /** Public because the patch's advice is inlined into Food, outside this package. */
+    public static boolean keepsFrozen(Food food) {
+        if (!configured || suspended) return false;
         IsoGridSquare square = worldSquare(food);
-        return square != null && ClimateManager.getInstance().getAirTemperatureForSquare(square) < freezeBelow;
+        return square != null && ClimateManager.getInstance().getAirTemperatureForSquare(square) < coldBelow;
     }
 
     /**
