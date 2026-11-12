@@ -1,0 +1,7 @@
+VERSION = 1,
+
+option PooledGeneratorPower.TilesPerCable
+{type = integer, min = 1, max = 5, default = 1, page = PooledGeneratorPower, translation = PooledGeneratorPower_TilesPerCable,}
+
+option PooledGeneratorPower.MaxCablesPerPool
+{type = integer, min = 0, max = 200, default = 40, page = PooledGeneratorPower, translation = PooledGeneratorPower_MaxCablesPerPool,}
