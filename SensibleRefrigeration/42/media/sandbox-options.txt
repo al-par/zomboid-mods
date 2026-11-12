@@ -1,0 +1,63 @@
+VERSION = 1,
+
+option AmbientColdStorage.ColdTemperature
+{
+	type = integer,
+	min = -20,
+	max = 30,
+	default = 4,
+
+	page = AmbientColdStorage,
+	translation = ACS_ColdTemperature,
+}
+
+option AmbientColdStorage.FreezeTemperature
+{
+	type = integer,
+	min = -30,
+	max = 10,
+	default = 0,
+
+	page = AmbientColdStorage,
+	translation = ACS_FreezeTemperature,
+}
+
+option AmbientColdStorage.HoursToFreeze
+{
+	type = double,
+	min = 0.5,
+	max = 48.0,
+	default = 4.0,
+
+	page = AmbientColdStorage,
+	translation = ACS_HoursToFreeze,
+}
+
+option AmbientColdStorage.FreezersStopSpoilage
+{
+	type = boolean,
+	default = true,
+
+	page = AmbientColdStorage,
+	translation = ACS_FreezersStopSpoilage,
+}
+
+option AmbientColdStorage.FridgesStopSpoilage
+{
+	type = boolean,
+	default = false,
+
+	page = AmbientColdStorage,
+	translation = ACS_FridgesStopSpoilage,
+}
+
+option AmbientColdStorage.ScanRadius
+{
+	type = integer,
+	min = 5,
+	max = 80,
+	default = 30,
+
+	page = AmbientColdStorage,
+	translation = ACS_ScanRadius,
+}

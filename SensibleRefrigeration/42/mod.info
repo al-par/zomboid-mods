@@ -1,0 +1,4 @@
+name=Sensible Refrigeration
+id=SensibleRefrigeration
+description=Food lying in the world (on the ground or in containers, outdoors or in unpowered buildings) follows the game's air temperature for that spot: cold air refrigerates it, sub-zero air freezes it, and frozen food stays frozen until it warms up. Food in powered freezers does not spoil. Singleplayer. Replaces Outside Freezer and No Spoiling in Freezers.
+modversion=1.0

@@ -1,0 +1,15 @@
+{
+  "Sandbox_AmbientColdStorage": "Sensible Refrigeration",
+  "Sandbox_ACS_ColdTemperature": "Refrigerate Below (C)",
+  "Sandbox_ACS_ColdTemperature_tooltip": "Air temperature below which food lying in the world spoils at the fridge rate (uses the vanilla Refrigeration Effectiveness setting). The temperature is the game's own for that spot: outdoor air outside, and the building's temperature indoors. Frozen food stays frozen until the air reaches this temperature. Default: 4.",
+  "Sandbox_ACS_FreezeTemperature": "Freeze Below (C)",
+  "Sandbox_ACS_FreezeTemperature_tooltip": "Air temperature below which food lying in the world freezes. Frozen food does not spoil. Default: 0.",
+  "Sandbox_ACS_HoursToFreeze": "Hours To Freeze",
+  "Sandbox_ACS_HoursToFreeze_tooltip": "In-game hours for food to go from thawed to fully frozen in freezing air. Vanilla freezers take 4. Default: 4.",
+  "Sandbox_ACS_FreezersStopSpoilage": "Powered Freezers Stop Spoilage",
+  "Sandbox_ACS_FreezersStopSpoilage_tooltip": "Food in a powered freezer stops ageing entirely, even before it has fully frozen. Default: on.",
+  "Sandbox_ACS_FridgesStopSpoilage": "Powered Fridges Stop Spoilage",
+  "Sandbox_ACS_FridgesStopSpoilage_tooltip": "Same as above for powered fridges. When off, fridges use the vanilla Refrigeration Effectiveness rate. Default: off.",
+  "Sandbox_ACS_ScanRadius": "Update Radius (tiles)",
+  "Sandbox_ACS_ScanRadius_tooltip": "Food within this many tiles of the player is updated every 10 in-game minutes. Food further away is corrected as soon as you come back or its area loads. Default: 30."
+}
