@@ -169,12 +169,8 @@ local function recipeApplies(playerObj, recipe, base, containers)
 end
 
 -- Plans one ingredient (or spice) and queues the actions for it, then another step.
--- Called from QuickMealsStepAction:update(), so the previous add's complete() has run.
-function QuickMeals.step(playerObj, session)
-    if session.lastAction then
-        session.baseItem = session.lastAction.baseItem
-        session.lastAction = nil
-    end
+-- Returns true when it queued another step.
+local function planStep(playerObj, session)
     session.steps = session.steps + 1
     if session.steps > MAX_STEPS then return end
 
@@ -188,12 +184,13 @@ function QuickMeals.step(playerObj, session)
         if not recipeApplies(playerObj, session.recipe, base, containers) then return end
         if not inv:contains(base) then
             if not base:getContainer() then return end
+            session.originalBase, session.baseOrigin = base, base:getContainer()
             ISTimedActionQueue.add(ISInventoryTransferUtil.newInventoryTransferAction(playerObj, base, base:getContainer(), inv, nil))
             if instanceof(base, "Food") then
                 base:setChef(playerObj:getUsername())
             end
             ISTimedActionQueue.add(QuickMealsStepAction:new(playerObj, session))
-            return
+            return true
         end
     end
     if not inv:contains(base) then return end
@@ -220,6 +217,22 @@ function QuickMeals.step(playerObj, session)
         ISCraftingUI.ReturnItemToOriginalContainer(playerObj, usedItem)
     end
     ISTimedActionQueue.add(QuickMealsStepAction:new(playerObj, session))
+    return true
+end
+
+-- Called from QuickMealsStepAction:update(), so the previous add's complete() has run.
+function QuickMeals.step(playerObj, session)
+    if session.lastAction then
+        session.baseItem = session.lastAction.baseItem
+        session.lastAction = nil
+    end
+    if planStep(playerObj, session) then return end
+    -- Done. Like vanilla's add-to-recipe, the base goes back where it came from unless an
+    -- ingredient replaced it with a new item.
+    if session.baseOrigin and session.baseItem == session.originalBase then
+        ISCraftingUI.ReturnItemToContainer(playerObj, session.baseItem, session.baseOrigin)
+        session.baseOrigin = nil
+    end
 end
 
 -- Like ISQueueActionsAction, but plans in update() instead of start(). start() can run inside

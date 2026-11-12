@@ -235,11 +235,17 @@ local function findGenerator(sq)
     return nil
 end
 
+-- A failed search scans thousands of squares, so it is retried at most once per game hour.
+local searchAgainAt = {}
+
 local function billGenerator(key, sq, amount)
     if billPool(sq, amount) then return end
     local gen = generatorAtKey(genCache[key])
     if not (gen and gen:isActivated()) then
+        local now = getGameTime():getWorldAgeHours()
+        if now < (searchAgainAt[key] or 0) then return end
         genCache[key], gen = findGenerator(sq)
+        searchAgainAt[key] = gen == nil and now + 1 or nil
     end
     if gen then gen:setFuel(math.max(0, gen:getFuel() - amount)) end
 end

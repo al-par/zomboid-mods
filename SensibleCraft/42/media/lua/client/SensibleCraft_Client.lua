@@ -6,7 +6,14 @@ local function onButcherHookLeftClick(object, x, y)
         return
     end
     local playerObj = getSpecificPlayer(0)
-    if not playerObj or not playerObj:isAlive() or playerObj:isAiming() then
+    if not playerObj or not playerObj:isAlive() or playerObj:isAiming() or playerObj:isIgnoreContextKey()
+            or playerObj:isClimbingLadder() or playerObj:isClimbingDownLadder() then
+        return
+    end
+    -- Same reach as vanilla's light-switch click: a stray click across the room doesn't walk you over.
+    local playerSq, hookSq = playerObj:getCurrentSquare(), object:getSquare()
+    if not playerSq or hookSq:getZ() ~= playerSq:getZ() or hookSq:DistToProper(playerObj) >= 2
+            or playerSq:isWallTo(hookSq) then
         return
     end
     if getCell():getDrag(0) then
