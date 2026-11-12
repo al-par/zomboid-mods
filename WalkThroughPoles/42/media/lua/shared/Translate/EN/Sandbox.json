@@ -1,0 +1,5 @@
+{
+  "Sandbox_WalkThroughPoles": "Walk Through Poles",
+  "Sandbox_WTP_BreakSpeed": "Wooden Pole Break Speed (km/h)",
+  "Sandbox_WTP_BreakSpeed_tooltip": "Cars at or below this speed are stopped by wooden utility poles and posts. Faster cars flatten them into a pile of scrap wood and keep going. A car that ends up on top of a pole flattens it at any speed. Mailboxes break at 30 km/h."
+}
