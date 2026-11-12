@@ -1,0 +1,215 @@
+VERSION = 1,
+
+option SensibleLivestock.MasonryWalls
+{
+	type = enum,
+	numValues = 4,
+	default = 1,
+
+	page = SensibleLivestock,
+	translation = SL_MasonryWalls,
+	valueTranslation = SL_Breakers,
+}
+
+option SensibleLivestock.MasonryLowWalls
+{
+	type = enum,
+	numValues = 4,
+	default = 2,
+
+	page = SensibleLivestock,
+	translation = SL_MasonryLowWalls,
+	valueTranslation = SL_Breakers,
+}
+
+option SensibleLivestock.MetalWalls
+{
+	type = enum,
+	numValues = 4,
+	default = 1,
+
+	page = SensibleLivestock,
+	translation = SL_MetalWalls,
+	valueTranslation = SL_Breakers,
+}
+
+option SensibleLivestock.MetalDoors
+{
+	type = enum,
+	numValues = 4,
+	default = 2,
+
+	page = SensibleLivestock,
+	translation = SL_MetalDoors,
+	valueTranslation = SL_Breakers,
+}
+
+option SensibleLivestock.MetalDoorWeldingLevel
+{
+	type = integer,
+	min = 1,
+	max = 11,
+	default = 6,
+
+	page = SensibleLivestock,
+	translation = SL_MetalDoorWeldingLevel,
+}
+
+option SensibleLivestock.MetalFences
+{
+	type = enum,
+	numValues = 4,
+	default = 1,
+
+	page = SensibleLivestock,
+	translation = SL_MetalFences,
+	valueTranslation = SL_Breakers,
+}
+
+option SensibleLivestock.WireFences
+{
+	type = enum,
+	numValues = 4,
+	default = 2,
+
+	page = SensibleLivestock,
+	translation = SL_WireFences,
+	valueTranslation = SL_Breakers,
+}
+
+option SensibleLivestock.WoodenWalls
+{
+	type = enum,
+	numValues = 4,
+	default = 2,
+
+	page = SensibleLivestock,
+	translation = SL_WoodenWalls,
+	valueTranslation = SL_Breakers,
+}
+
+option SensibleLivestock.WoodenFences
+{
+	type = enum,
+	numValues = 4,
+	default = 3,
+
+	page = SensibleLivestock,
+	translation = SL_WoodenFences,
+	valueTranslation = SL_Breakers,
+}
+
+option SensibleLivestock.WoodenFenceHits
+{
+	type = integer,
+	min = 1,
+	max = 100,
+	default = 10,
+
+	page = SensibleLivestock,
+	translation = SL_WoodenFenceHits,
+}
+
+option SensibleLivestock.Furnishings
+{
+	type = enum,
+	numValues = 4,
+	default = 4,
+
+	page = SensibleLivestock,
+	translation = SL_Furnishings,
+	valueTranslation = SL_Breakers,
+}
+
+option SensibleLivestock.MediumWeight
+{
+	type = integer,
+	min = 1,
+	max = 2000,
+	default = 50,
+
+	page = SensibleLivestock,
+	translation = SL_MediumWeight,
+}
+
+option SensibleLivestock.HeavyWeight
+{
+	type = integer,
+	min = 1,
+	max = 2000,
+	default = 400,
+
+	page = SensibleLivestock,
+	translation = SL_HeavyWeight,
+}
+
+option SensibleLivestock.ForcePercent
+{
+	type = integer,
+	min = 0,
+	max = 1000,
+	default = 100,
+
+	page = SensibleLivestock,
+	translation = SL_ForcePercent,
+}
+
+option SensibleLivestock.PanicForcePercent
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 50,
+
+	page = SensibleLivestock,
+	translation = SL_PanicForcePercent,
+}
+
+option SensibleLivestock.GiveUpRams
+{
+	type = integer,
+	min = 0,
+	max = 50,
+	default = 3,
+
+	page = SensibleLivestock,
+	translation = SL_GiveUpRams,
+}
+
+option SensibleLivestock.HiddenRunners
+{
+	type = boolean,
+	default = true,
+
+	page = SensibleLivestock,
+	translation = SL_HiddenRunners,
+}
+
+option SensibleLivestock.HiddenZombies
+{
+	type = boolean,
+	default = true,
+
+	page = SensibleLivestock,
+	translation = SL_HiddenZombies,
+}
+
+option SensibleLivestock.FamiliarOwners
+{
+	type = boolean,
+	default = true,
+
+	page = SensibleLivestock,
+	translation = SL_FamiliarOwners,
+}
+
+option SensibleLivestock.FamiliarAcceptance
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 50,
+
+	page = SensibleLivestock,
+	translation = SL_FamiliarAcceptance,
+}

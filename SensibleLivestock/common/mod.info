@@ -1,0 +1,6 @@
+name=Sensible Livestock
+id=SensibleLivestock
+description=Animals respect what your walls are made of. How much an animal can break depends on its weight, its strength, why it is ramming, and the material: masonry and metal walls hold, short stone and brick walls only yield to cattle, sheep and pigs can't ram through wooden walls, wooden fences take 10 rams, animals that can't get through wear themselves out and back off, and animals that trust you don't panic when you run past. Adds a short stone wall (Masonry 2). Works in single player and multiplayer.
+modversion=1.4
+pack=SensibleLivestock
+tiledef=sensiblelivestock_tiles 4271
