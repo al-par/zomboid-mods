@@ -467,23 +467,60 @@ function Power.desired()
     return out
 end
 
+-- Chunks save their generator positions, and vanilla keeps a position whose own square isn't
+-- loaded. A position dropped while some of its chunks were unloaded is recorded per chunk in
+-- data.stale and removed when that chunk loads.
+local function chunkKey(wx, wy)
+    return wx .. "," .. wy
+end
+
+local function retire(p, stale)
+    local ax, ay, bx, by = positionChunkRange(p)
+    for wy = ay, by do
+        for wx = ax, bx do
+            local chunk = PGP.chunkAt(wx, wy)
+            if chunk then
+                chunk:removeGeneratorPos(p.x, p.y, p.z)
+            else
+                local ck = chunkKey(wx, wy)
+                stale[ck] = stale[ck] or {}
+                stale[ck][p.k] = { x = p.x, y = p.y, z = p.z }
+            end
+        end
+    end
+end
+
+local function unretire(p, stale)
+    local ax, ay, bx, by = positionChunkRange(p)
+    for wy = ay, by do
+        for wx = ax, bx do
+            local entry = stale[chunkKey(wx, wy)]
+            if entry then entry[p.k] = nil end
+        end
+    end
+end
+
 function Power.apply()
+    local data = PGP.getData()
+    data.stale = data.stale or {}
     local want = Power.desired()
     local have = Power.applied
     local changed = {}
     for k, p in pairs(have) do
         if not want[k] then
-            forEachLoadedChunk(p, function(chunk) chunk:removeGeneratorPos(p.x, p.y, p.z) end)
+            retire(p, data.stale)
             table.insert(changed, p)
         end
     end
     for k, p in pairs(want) do
         if not have[k] then
+            unretire(p, data.stale)
             forEachLoadedChunk(p, function(chunk) chunk:addGeneratorPos(p.x, p.y, p.z) end)
             table.insert(changed, p)
         end
     end
     Power.applied = want
+    data.applied = want
     if #changed > 0 and not isServer() then
         Power.refreshArea(changed)
     end
@@ -600,6 +637,13 @@ end
 local function onLoadChunk(chunk)
     local wx, wy = PGP.chunkCoords(chunk)
     if not wx then return end
+    local data = PGP.getData()
+    local ck = chunkKey(wx, wy)
+    local stale = data.stale and data.stale[ck]
+    if stale then
+        for _, p in pairs(stale) do chunk:removeGeneratorPos(p.x, p.y, p.z) end
+        data.stale[ck] = nil
+    end
     if PGP.firstKey(Power.applied) ~= nil then
         Power.reapplyNear(wx, wy)
         if not isServer() then
@@ -627,7 +671,10 @@ local function onTick()
 end
 
 local function onInitGlobalModData()
-    PGP.getData()
+    -- Positions applied last session are already in the saved chunks; the first apply
+    -- removes the ones no longer wanted.
+    Power.applied = PGP.getData().applied or {}
+    for _, p in pairs(Power.applied) do p.ax = nil end
     PGP.markDirty()
     if isClient() then ModData.request(PGP.MODDATA_KEY) end
 end
