@@ -1,0 +1,54 @@
+{
+  "IGUI_HW_LowHealth_Short": "Low health. Game paused.",
+  "IGUI_HW_LowHealth_Title": "Low Health",
+  "IGUI_HW_LowHealth_Body": "Your health is low, so the game is paused. <LINE> <LINE> Check the health panel and treat your wounds before you go on.",
+
+  "IGUI_HW_Sick_Short": "You are now Sick.",
+  "IGUI_HW_Sick_Title": "You are now Sick",
+  "IGUI_HW_Sick_Body": "Your condition has worsened. <LINE> <LINE> Rest, drink water and stay warm and dry. <LINE> Avoid raw or rotten food. <LINE> Move away from corpses, or wear a gas mask or respirator. <LINE> If a wound is infected, disinfect it and take antibiotics.",
+
+  "IGUI_HW_Fever_Short": "You have a Fever.",
+  "IGUI_HW_Fever_Title": "You have a Fever",
+  "IGUI_HW_Fever_Body": "Rest in a warm, dry place and drink water. <LINE> If a wound is infected, disinfect it and take antibiotics.",
+  "IGUI_HW_Fever_Knox": "Your skin feels like broken glass, and your head feels like it might explode. Your bones feel like they are on fire, but you shiver uncontrollably. Every step you take feels heavier and heavier still. <LINE> <LINE> You need rest. Get inside. <RGB:0.5,0.5,0.5> Lock the door.",
+
+  "IGUI_HW_Hypothermia_Short": "Hypothermia. Warm up now.",
+  "IGUI_HW_Hypothermia_Title": "Hypothermia Warning",
+  "IGUI_HW_Hypothermia_Body": "Your body temperature is dangerously low. <LINE> <LINE> Put on dry, warm clothing. <LINE> Find shelter or light a fire. <LINE> Drink warm liquids if you have any.",
+
+  "IGUI_HW_Overheating_Short": "Overheating. Cool down now.",
+  "IGUI_HW_Overheating_Title": "Overheating",
+  "IGUI_HW_Overheating_Body": "Your body temperature is dangerously high. <LINE> <LINE> Remove excess clothing. <LINE> Find shade or cool water. <LINE> Rest and stay out of direct sunlight.",
+
+  "IGUI_HW_CriticalInjury_Short": "Critical injury. Bandage it now.",
+  "IGUI_HW_CriticalInjury_Title": "Critical Injury",
+  "IGUI_HW_CriticalInjury_Body": "You have a serious injury to your head, neck or torso. <LINE> <LINE> Bandage it immediately. <LINE> These wounds bleed fast and can kill you.",
+
+  "IGUI_HW_LodgedBullet_Short": "Lodged bullet. Remove it with tweezers.",
+  "IGUI_HW_LodgedBullet_Title": "Lodged Bullet",
+  "IGUI_HW_LodgedBullet_Body": "You have a bullet lodged in your body. <LINE> <LINE> Remove it with tweezers or suture needle holders from the health panel. <LINE> It keeps hurting you until it is out.",
+
+  "IGUI_HW_LodgedGlass_Short": "Lodged glass. Remove it with tweezers or by hand.",
+  "IGUI_HW_LodgedGlass_Title": "Lodged Glass",
+  "IGUI_HW_LodgedGlass_Body": "You have glass shards lodged in your body. <LINE> <LINE> Remove them with tweezers or by hand from the health panel. <LINE> Leaving them in keeps hurting you.",
+
+  "IGUI_HW_Burns_Short": "Burn injury. Clean and bandage it.",
+  "IGUI_HW_Burns_Title": "Burn Injury",
+  "IGUI_HW_Burns_Body": "You have a burn. <LINE> <LINE> Open the health panel to clean the burn, then bandage it.",
+
+  "IGUI_HW_FoodPoisoning_Short": "Food poisoning. Stop eating what caused it.",
+  "IGUI_HW_FoodPoisoning_Title": "Food Poisoning",
+  "IGUI_HW_FoodPoisoning_Body": "You have serious food poisoning. <LINE> <LINE> There is no cure; it passes with time. <LINE> Stop eating whatever caused it. <LINE> Rest and drink water.",
+
+  "IGUI_HW_Poisoning_Short": "You are poisoned. Rest and drink water.",
+  "IGUI_HW_Poisoning_Title": "Poisoned",
+  "IGUI_HW_Poisoning_Body": "You have been poisoned. <LINE> <LINE> There is no cure; it passes with time. <LINE> Rest and drink water. <LINE> Do not eat or drink anything that may be tainted.",
+
+  "IGUI_HW_Starvation_Short": "Starving. Eat something now.",
+  "IGUI_HW_Starvation_Title": "Starving",
+  "IGUI_HW_Starvation_Body": "You are starving and losing health. <LINE> <LINE> Eat any food you have. <LINE> Check nearby containers. <LINE> Forage, fish or hunt if you have nothing.",
+
+  "IGUI_HW_Dehydration_Short": "Dehydrated. Drink water now.",
+  "IGUI_HW_Dehydration_Title": "Dehydrated",
+  "IGUI_HW_Dehydration_Body": "You are dehydrated and losing health. <LINE> <LINE> Check sinks, water bottles and rain collectors. <LINE> Untreated water is better than dying of thirst."
+}

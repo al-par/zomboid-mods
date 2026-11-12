@@ -6,7 +6,7 @@ local HH = HomeHeating
 -- Fuel goes into the bin; the fire takes it from there.
 local vanillaAddFuel = ISCampingMenu.doAddFuelOption
 function ISCampingMenu.doAddFuelOption(context, worldobjects, currentFuel, fuelInfo, target, ...)
-    if HH.isOurs(target) then return end
+    if instanceof(target, "IsoObject") and HH.isOurs(target) then return end
     return vanillaAddFuel(context, worldobjects, currentFuel, fuelInfo, target, ...)
 end
 

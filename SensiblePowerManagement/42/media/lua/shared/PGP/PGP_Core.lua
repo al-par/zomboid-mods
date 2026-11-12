@@ -458,7 +458,7 @@ function Power.desired()
                         end
                         local inner = d - base
                         if inner <= base - 2 then break end
-                        d = math.max(1, inner - base + 2)
+                        d = math.min(d - 1, math.max(1, inner - base + 2))
                     end
                 end
             end

@@ -6,7 +6,7 @@
   "Sandbox_HW_Style_option2": "Simplified",
   "Sandbox_HW_Style_option3": "Full",
   "Sandbox_HW_LowHealthPause": "Pause on Low Health",
-  "Sandbox_HW_LowHealthPause_tooltip": "Pause the game when overall health drops to the threshold below. Works with any warning style.",
+  "Sandbox_HW_LowHealthPause_tooltip": "Pause the game when overall health drops to the threshold below, and say why unless the warning style is None. Pauses with any warning style.",
   "Sandbox_HW_LowHealthThreshold": "Low Health Threshold",
   "Sandbox_HW_LowHealthThreshold_tooltip": "Overall body health %% (1-99) at which the game pauses. Default: 20.",
   "Sandbox_HW_SickEnabled": "Sick Warning",
