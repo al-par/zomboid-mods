@@ -1,0 +1,6 @@
+name=Home Heating
+id=HomeHeating
+description=Heat your home. Masonry hearths in three styles (hooded, raised range, bake oven), two or three tiles wide, in brick or stone, that come out neat at Masonry 7 and burn wood from their own firewood box. Fit a pot bar to cook on them. A welded coal heater that burns charcoal and cooks, and a home-made electric heater that runs off a generator or the grid. Every heater warms everything within 8 tiles.
+modversion=1.0
+pack=HomeHeating
+tiledef=homeheating_tiles 7317

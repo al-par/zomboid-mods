@@ -1,0 +1,5 @@
+{
+    "ContextMenu_HH_HeaterOn": "Turn Heater On",
+    "ContextMenu_HH_HeaterOff": "Turn Heater Off",
+    "ContextMenu_HH_NoPower": "No power. It runs on a generator or the grid."
+}

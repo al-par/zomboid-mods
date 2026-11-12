@@ -1,0 +1,8 @@
+{
+    "Tooltip_craft_HH_hoodDesc": "An open cooking hearth with a smoke hood. Burns wood from its firewood box and heats everything within 8 tiles while it has fuel. Build it against a north or west wall. At Masonry 7 the work comes out neat. Add a pot bar to cook on it.",
+    "Tooltip_craft_HH_rangeDesc": "A waist-high masonry range with the fire on top and wood stores below. Burns wood from its firewood box and heats everything within 8 tiles while it has fuel. Build it against a north or west wall. At Masonry 7 the work comes out neat. Add a pot bar to cook on it.",
+    "Tooltip_craft_HH_ovenDesc": "A low hearth with a domed bake oven beside it. Burns wood from its firewood box and heats everything within 8 tiles while it has fuel. Build it against a north or west wall. At Masonry 7 the work comes out neat. Add a pot bar to cook on it.",
+    "Tooltip_craft_HH_coalHeaterDesc": "A welded drum stove. Burns charcoal from its bin, 1.2 hours per kilogram, heats everything within 8 tiles and cooks in its firebox.",
+    "Tooltip_craft_HH_electricHeaterDesc": "A home-made fan heater. Heats everything within 8 tiles while it is on and the square has power. On a generator it burns 0.52 units of fuel an hour, scaled by the generator fuel consumption setting.",
+    "Tooltip_craft_HH_potBarDesc": "An iron bar with hooks and pots, set across one of your hearths. Place it on the hearth. It gives the hearth a cooking slot that cooks while the fire burns."
+}
