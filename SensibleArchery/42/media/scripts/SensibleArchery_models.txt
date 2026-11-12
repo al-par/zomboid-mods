@@ -1,0 +1,37 @@
+module Base
+{
+    model CA_BowHeld
+    {
+        mesh = weapons/sensiblearchery/SA_BowHeld,
+        texture = weapons/sensiblearchery/SA_Archery,
+        attachment muzzle
+        {
+            offset = 0.015 0.275 0.02,
+            rotate = 0.0 0.0 0.0,
+        }
+    }
+
+    model CA_Bow
+    {
+        mesh = weapons/sensiblearchery/SA_Bow,
+        texture = weapons/sensiblearchery/SA_Archery,
+    }
+
+    model CA_BowStave
+    {
+        mesh = weapons/sensiblearchery/SA_BowStave,
+        texture = weapons/sensiblearchery/SA_Archery,
+    }
+
+    model CA_Arrow
+    {
+        mesh = weapons/sensiblearchery/SA_Arrow,
+        texture = weapons/sensiblearchery/SA_Archery,
+    }
+
+    model CA_ArrowShaft
+    {
+        mesh = weapons/sensiblearchery/SA_ArrowShaft,
+        texture = weapons/sensiblearchery/SA_Archery,
+    }
+}

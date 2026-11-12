@@ -1,0 +1,179 @@
+module Base
+{
+    craftRecipe CA_CarveBowStave
+    {
+        NeedToBeLearn = true,
+        timedAction = SharpenStakeWood,
+        time = 400,
+        Tags = InHandCraft,
+        category = Carving,
+        SkillRequired = Carving:3,
+        xpAward = Carving:25,
+        inputs
+        {
+            item 1 tags[base:sharpknife] mode:keep flags[MayDegradeLight;Prop1;IsNotDull],
+            item 1 [Base.Sapling;Base.LongStick;Base.Plank] flags[Prop2],
+        }
+        outputs
+        {
+            item 1 Base.CA_BowStave,
+        }
+    }
+
+    craftRecipe CA_TwistBowstring
+    {
+        NeedToBeLearn = true,
+        timedAction = Making,
+        time = 180,
+        Tags = AnySurfaceCraft,
+        category = Weaponry,
+        xpAward = Tailoring:5,
+        inputs
+        {
+            item 3 [Base.Thread_Sinew;Base.Twine] flags[Prop2;IsExclusive],
+        }
+        outputs
+        {
+            item 1 Base.CA_Bowstring,
+        }
+    }
+
+    craftRecipe CA_StringBow
+    {
+        NeedToBeLearn = true,
+        timedAction = CraftWeapon2H,
+        time = 120,
+        Tags = InHandCraft,
+        category = Weaponry,
+        xpAward = Carving:10,
+        inputs
+        {
+            item 1 [Base.CA_BowStave] flags[Prop2],
+            item 1 [Base.CA_Bowstring],
+        }
+        outputs
+        {
+            item 1 Base.CA_Bow,
+        }
+    }
+
+    craftRecipe CA_RestringBow
+    {
+        timedAction = CraftWeapon2H,
+        time = 120,
+        Tags = InHandCraft,
+        category = Weaponry,
+        xpAward = Carving:5,
+        Tooltip = Tooltip_CA_RestringBow,
+        inputs
+        {
+            item 1 [Base.CA_Bow] flags[Prop2;IsDamaged;AllowDestroyedItem],
+            item 1 [Base.CA_Bowstring],
+        }
+        outputs
+        {
+            item 1 Base.CA_Bow,
+        }
+    }
+
+    craftRecipe CA_CarveArrowShafts
+    {
+        NeedToBeLearn = true,
+        timedAction = SharpenStakeWood,
+        time = 150,
+        Tags = InHandCraft,
+        category = Carving,
+        SkillRequired = Carving:1,
+        xpAward = Carving:5,
+        inputs
+        {
+            item 1 tags[base:sharpknife] mode:keep flags[MayDegradeLight;Prop1;IsNotDull],
+            item 1 [Base.WoodenStick2] flags[Prop2],
+        }
+        outputs
+        {
+            item 2 Base.CA_ArrowShaft,
+        }
+    }
+
+    craftRecipe CA_KnapFlintArrowheads
+    {
+        NeedToBeLearn = true,
+        timedAction = HammerStoneStanding,
+        time = 230,
+        Tags = AnySurfaceCraft,
+        category = Knapping,
+        SkillRequired = FlintKnapping:1,
+        xpAward = FlintKnapping:10,
+        inputs
+        {
+            item 1 [Base.FlintNodule] flags[Prop2],
+            item 1 tags[base:hammerstone;base:mallet;base:knappingtool] mode:keep flags[Prop1;MayDegradeLight],
+        }
+        outputs
+        {
+            item 3 Base.CA_ArrowheadFlint,
+        }
+    }
+
+    craftRecipe CA_CarveBoneArrowheads
+    {
+        NeedToBeLearn = true,
+        timedAction = SharpenStakeBone,
+        time = 200,
+        Tags = AnySurfaceCraft,
+        category = Carving,
+        SkillRequired = Carving:2,
+        xpAward = Carving:10,
+        inputs
+        {
+            item 1 tags[base:whetstone;base:file] mode:keep flags[MayDegradeLight],
+            item 1 tags[base:sharpknife] mode:keep flags[Prop1;IsNotDull;MayDegradeLight],
+            item 1 [Base.SharpBoneFragment] flags[Prop2],
+        }
+        outputs
+        {
+            item 2 Base.CA_ArrowheadBone,
+        }
+    }
+
+    craftRecipe CA_FileMetalArrowheads
+    {
+        NeedToBeLearn = true,
+        timedAction = CraftWeapon1H,
+        time = 300,
+        Tags = InHandCraft,
+        category = Weaponry,
+        xpAward = Maintenance:10,
+        inputs
+        {
+            item 1 [Base.ScrapMetal;Base.SmallSheetMetal] flags[Prop2],
+            item 1 tags[base:whetstone;base:file;base:smallfiles;base:metalsaw;base:smallsaw] mode:keep flags[MayDegrade;Prop1],
+        }
+        outputs
+        {
+            item 4 Base.CA_ArrowheadMetal,
+        }
+    }
+
+    craftRecipe CA_FletchArrow
+    {
+        NeedToBeLearn = true,
+        timedAction = Making,
+        time = 100,
+        Tags = AnySurfaceCraft,
+        category = Weaponry,
+        xpAward = Carving:3,
+        inputs
+        {
+            item 1 [Base.CA_ArrowShaft] flags[Prop2],
+            item 1 [Base.CA_ArrowheadFlint;Base.CA_ArrowheadBone;Base.CA_ArrowheadMetal],
+            item 3 tags[base:feather],
+            item 1 [Base.Thread_Sinew;Base.Thread;Base.Twine],
+        }
+        outputs
+        {
+            item 1 Base.CA_Arrow,
+        }
+    }
+}

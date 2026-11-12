@@ -1,0 +1,6 @@
+{
+    "Tooltip_CA_BowStave": "Needs a bowstring of twisted sinew or twine.",
+    "Tooltip_CA_Bow": "Quiet. Trains Aiming. Reload readies up to 5 arrows; the next one is nocked after each shot.",
+    "Tooltip_CA_Arrow": "Arrows that hit a zombie can often be pulled from its corpse.",
+    "Tooltip_CA_RestringBow": "Replaces a worn string. Arrows readied on the bow are lost."
+}
