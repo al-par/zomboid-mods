@@ -1,0 +1,9 @@
+{
+    "Sandbox_QuickMeals": "Quick Meals",
+    "Sandbox_QuickMeals_ExcludedItems": "Never add automatically",
+    "Sandbox_QuickMeals_ExcludedItems_tooltip": "Items Quick Prepare never adds, as spices or as ingredients. Separate entries with ; or a comma. Use full ids (Base.Salt) or bare names (Salt). You can still add these by hand.",
+    "Sandbox_QuickMeals_SpiceLimitEnabled": "Limit spices",
+    "Sandbox_QuickMeals_SpiceLimitEnabled_tooltip": "When on, Quick Prepare stops adding spices once the meal holds the number set below. When off, it adds one of each available spice.",
+    "Sandbox_QuickMeals_SpiceLimit": "Spice limit",
+    "Sandbox_QuickMeals_SpiceLimit_tooltip": "Most spices a meal can hold before Quick Prepare stops adding them, counting spices already in it. Only used when Limit spices is on."
+}

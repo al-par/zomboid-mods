@@ -1,0 +1,3 @@
+{
+    "Tooltip_QuickMeals_QuickPrepare": "Adds one of each available ingredient until the recipe is full (%1 more). An ingredient type repeats only when every available type is already in. Among those, whatever spoils soonest goes in first (fresh produce before jars, jars before dried or canned food), and rotten food last. Then adds one of each available spice the same way, up to the sandbox spice limit if it's on. <LINE> Ingredient types available now: %2"
+}
