@@ -1,0 +1,97 @@
+module Base
+{
+    item SLS_SaltLick
+    {
+        DisplayCategory = Material,
+        ItemType = base:drainable,
+        Weight = 15.0,
+        WeightEmpty = 0.01,
+        Icon = SLS_SaltLick,
+        UseDelta = 0.05,
+        UseWhileEquipped = false,
+        cantBeConsolided = true,
+        Tooltip = Tooltip_SLS_SaltLick,
+    }
+
+    item SLS_DirtySaltChunk
+    {
+        DisplayCategory = Material,
+        ItemType = base:normal,
+        Weight = 0.75,
+        Icon = Limestone,
+        WorldStaticModel = Limestone,
+        Tooltip = Tooltip_SLS_DirtySalt,
+    }
+
+    item SLS_PotOfBrine
+    {
+        DisplayCategory = Food,
+        ItemType = base:food,
+        Weight = 3.0,
+        Icon = Pot_Water,
+        CantEat = true,
+        BadInMicrowave = true,
+        CookingSound = BoilingFood,
+        EatType = Pot,
+        PourType = Pot,
+        IsCookable = true,
+        ReplaceOnCooked = Base.SLS_PotOfSalt,
+        ReplaceOnUse = Base.Pot,
+        MinutesToCook = 90,
+        MinutesToBurn = 1440,
+        HungerChange = -10.0,
+        StaticModel = CookingPotGround_Fluid,
+        WorldStaticModel = CookingPotGround_Fluid,
+        Tags = base:hasmetal,
+        Tooltip = Tooltip_SLS_Brine,
+        SoundMap = DumpContents EmptyPot,
+    }
+
+    item SLS_PotForgedOfBrine
+    {
+        DisplayCategory = Food,
+        ItemType = base:food,
+        Weight = 3.0,
+        Icon = Pot_Forged,
+        CantEat = true,
+        BadInMicrowave = true,
+        CookingSound = BoilingFood,
+        EatType = Pot,
+        PourType = Pot,
+        IsCookable = true,
+        ReplaceOnCooked = Base.SLS_PotForgedOfSalt,
+        ReplaceOnUse = Base.PotForged,
+        MinutesToCook = 90,
+        MinutesToBurn = 1440,
+        HungerChange = -10.0,
+        StaticModel = CookingPotForged,
+        WorldStaticModel = CookingPotForgedGround,
+        Tags = base:hasmetal,
+        Tooltip = Tooltip_SLS_Brine,
+        SoundMap = DumpContents EmptyPot,
+    }
+
+    item SLS_PotOfSalt
+    {
+        DisplayCategory = Cooking,
+        ItemType = base:normal,
+        Weight = 1.75,
+        Icon = Pot,
+        StaticModel = CookingPot,
+        WorldStaticModel = CookingPotGround,
+        Tags = base:hasmetal,
+        Tooltip = Tooltip_SLS_PotOfSalt,
+    }
+
+    item SLS_PotForgedOfSalt
+    {
+        DisplayCategory = Cooking,
+        ItemType = base:normal,
+        Weight = 1.75,
+        Icon = Pot_Forged,
+        StaticModel = CookingPotForged,
+        WorldStaticModel = CookingPotForgedGround,
+        Tags = base:hasmetal,
+        Tooltip = Tooltip_SLS_PotOfSalt,
+    }
+}
