@@ -2,6 +2,7 @@ package reviveme;
 
 import java.util.ArrayList;
 import me.zed_0xff.zombie_buddy.Patch;
+import zombie.characters.IsoPlayer;
 
 /**
  * Single player only ever plays localPlayers row 1. When that character dies, players.db keeps the
@@ -25,6 +26,14 @@ public final class Patches {
         @Patch.OnExit
         public static void exit(@Patch.Return ArrayList<Object> players) {
             Revive.markMainPlayerAlive(players);
+        }
+    }
+
+    @Patch(className = "zombie.savefile.PlayerDB", methodName = "loadLocalPlayer")
+    public static final class HealLoadedMainPlayer {
+        @Patch.OnExit
+        public static void exit(@Patch.Argument(0) int sqlId, @Patch.Return boolean loaded) {
+            if (loaded && sqlId == Revive.MAIN_PLAYER_ID) Revive.healIfDead(IsoPlayer.getInstance());
         }
     }
 
