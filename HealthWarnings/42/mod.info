@@ -1,0 +1,4 @@
+name=Health Warnings
+id=HealthWarnings
+description=Warns about dangerous conditions with a detailed popup or a short banner, and can pause the game on each warning or when health drops below a threshold.
+modversion=2.0

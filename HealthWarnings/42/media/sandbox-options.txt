@@ -1,0 +1,204 @@
+VERSION = 1,
+
+option HealthWarnings.Style
+{
+	type = enum,
+	numValues = 3,
+	default = 3,
+	page = HealthWarnings,
+	translation = HW_Style,
+}
+
+option HealthWarnings.LowHealthPause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_LowHealthPause,
+}
+
+option HealthWarnings.LowHealthThreshold
+{
+	type = integer,
+	min = 1,
+	max = 99,
+	default = 20,
+	page = HealthWarnings,
+	translation = HW_LowHealthThreshold,
+}
+
+option HealthWarnings.SickEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_SickEnabled,
+}
+
+option HealthWarnings.SickPause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_SickPause,
+}
+
+option HealthWarnings.FeverEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_FeverEnabled,
+}
+
+option HealthWarnings.FeverPause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_FeverPause,
+}
+
+option HealthWarnings.TemperatureEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_TemperatureEnabled,
+}
+
+option HealthWarnings.TemperaturePause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_TemperaturePause,
+}
+
+option HealthWarnings.CriticalInjuryEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_CriticalInjuryEnabled,
+}
+
+option HealthWarnings.CriticalInjuryPause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_CriticalInjuryPause,
+}
+
+option HealthWarnings.LodgedBulletEnabled
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_LodgedBulletEnabled,
+}
+
+option HealthWarnings.LodgedBulletPause
+{
+	type = boolean,
+	default = true,
+	page = HealthWarnings,
+	translation = HW_LodgedBulletPause,
+}
+
+option HealthWarnings.FoodPoisoningEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_FoodPoisoningEnabled,
+}
+
+option HealthWarnings.FoodPoisoningPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_FoodPoisoningPause,
+}
+
+option HealthWarnings.PoisoningEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_PoisoningEnabled,
+}
+
+option HealthWarnings.PoisoningPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_PoisoningPause,
+}
+
+option HealthWarnings.LodgedGlassEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_LodgedGlassEnabled,
+}
+
+option HealthWarnings.LodgedGlassPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_LodgedGlassPause,
+}
+
+option HealthWarnings.BurnsEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_BurnsEnabled,
+}
+
+option HealthWarnings.BurnsPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_BurnsPause,
+}
+
+option HealthWarnings.StarvationEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_StarvationEnabled,
+}
+
+option HealthWarnings.StarvationPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_StarvationPause,
+}
+
+option HealthWarnings.DehydrationEnabled
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_DehydrationEnabled,
+}
+
+option HealthWarnings.DehydrationPause
+{
+	type = boolean,
+	default = false,
+	page = HealthWarnings,
+	translation = HW_DehydrationPause,
+}
