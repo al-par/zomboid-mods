@@ -38,7 +38,13 @@ Rules for every published mod in the Sensible family, so players get low frictio
 
 1. **Each mod owns its Java.** One jar per mod, inside that mod (`42/media/java/Sensible<Topic>.jar`). A broken or denied jar affects only its own mod. With author trust, extra jars cost the player nothing.
 2. **No shared Java library.** Tiny helpers are copied rather than shared, so mods update independently.
-3. **Sensible Core comes later, when it's needed.** Its job would be the combined status panel and a single "Java part missing" pop-up across the family. With one Java-enhanced mod there's nothing to combine, so that mod carries its own status code, written as a separable file. Extract it into `SensibleCore` when the second Java-enhanced mod arrives. Only mods with Java features would require Core; Lua-only mods (Salt, Archery, and base Refrigeration) never would.
+3. **Sensible Core: one-time Java setup, then every mod is one-click subscribe** (decided 2026-11-12; supersedes "Core comes later").
+   1. **Goal.** The least friction possible for players. They do one setup for Sensible Core; after that, any of our mods, Java or not, works by subscribing on the Workshop. No manual copying of jars.
+   2. **Leverage ZombieBuddy, never replace it.** We push the existing standard forward (upstream PRs, `environment.md` §5 item 12) instead of competing with it. The one-time setup is ZombieBuddy's install; Core guides it. If an installer reduces effort further, prefer improving ZombieBuddy's own installer upstream.
+   3. **Jars already arrive with the mod.** Each jar ships inside its own Workshop item (section 5 item 1) and ZombieBuddy loads it, so Core downloads nothing. Runtime downloads from GitHub or elsewhere are out: Lua can't, and Java would bypass Workshop delivery and ZombieBuddy's approval.
+   4. **Jobs.** One pop-up when ZombieBuddy isn't running, with the setup steps; a status panel of every active mod's Java part (`ZombieBuddy.getJavaModStatus`) and which features are off; guidance to trust our signing author once (section 2 item 4) so new jars don't prompt; a small Lua API each mod uses to turn its Java features on or off.
+   5. **Scope.** Every mod of ours with a Java part requires Core, Sensible-branded or not (ErrorMonitor, CutawayFix, ReviveMe, DebugHotkeysFix too). Lua-only mods never do. Core itself is Lua-only.
+   6. **Status.** Not built yet. Five mods carry jars, and four of them have their own detection Lua to move into Core.
 
 ## 6. Developing while the user plays
 
