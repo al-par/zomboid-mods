@@ -1,7 +1,7 @@
--- Build 42. In-game half of Error Monitor. The recording is done by the Java agent
--- (java/ErrorMonitor-agent.jar, added to the launch options by install.ps1). This file
--- 1. tells the agent the game state, save and active mods (ErrorMonitor_context.txt), and
--- 2. reads the agent's ErrorMonitor_status.txt and shows new errors in game.
+-- Build 42. In-game half of Error Monitor. The recording is done by the Java part
+-- (media/java/ErrorMonitor.jar, loaded by ZombieBuddy). This file
+-- 1. tells the recorder the game state, save and active mods (ErrorMonitor_context.txt), and
+-- 2. reads the recorder's ErrorMonitor_status.txt and shows new errors in game.
 -- Both files are in Zomboid\Lua. Text is English only, like the vanilla debug windows:
 -- error messages are arbitrary text and must not go through getText's formatter.
 
@@ -271,7 +271,7 @@ local function buildReport(highlight)
 	if not running then
 		doc:add(AMBER, "The Error Monitor recorder is not running, so this session is not being recorded.")
 		doc:line()
-		doc:add(GREY, "This mod only shows what the recorder (a Java agent) finds. Close the game, run install.ps1 in the mods\\ErrorMonitor folder, then start the game again.")
+		doc:add(GREY, "The recorder is Java and needs the ZombieBuddy Java mod loader. Install ZombieBuddy, approve Error Monitor's Java when ZombieBuddy asks, and keep Error Monitor enabled in the main menu's Mods screen so it records from the start.")
 		doc:line()
 		if status and status.session then
 			doc:line()

@@ -30,7 +30,7 @@ Documentation for AI agents working in `C:\Users\alpar\Zomboid\mods`, for game v
 | `save-manifest.md` | Starting any chat: the mods in the save and what each does |
 | `workflow.md` | Starting any task. It is the working protocol and explains why each rule exists |
 | `sensible-architecture.md` | You're designing, renaming, publishing or adding Java to a Sensible mod (branding, Lua-by-default rules, compatibility, ZombieBuddy hooks) |
-| `environment.md` | You need a path, the decompiler, launch options, Java agent details, or how our mods use ZombieBuddy |
+| `environment.md` | You need a path, the decompiler, launch options, or how our mods use ZombieBuddy |
 | `mod-structure.md` | Creating a mod, or touching `mod.info`, version folders, translations, sandbox options, ModOptions, or a Workshop upload |
 | `lua.md` | Writing Lua: Kahlua quirks, load order, events, Java interop, B41→B42 renames, context menus |
 | `multiplayer.md` | Timed actions, client/server commands, global ModData, side checks |

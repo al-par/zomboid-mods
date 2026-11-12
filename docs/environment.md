@@ -52,11 +52,11 @@ Forked Workshop mods. The save loads the fork ids, not the Workshop ids. Edit on
 2. **Flags confirmed in `MainScreenState`:** `-debug`, `-debuglog=`, `-debugcfg=`, `-debugLogFile=`, `-console_dot_txt_size_kb=`, `-imgui`, `-cachedir=`, `-modfolders`, `-nosound`, `-nosteam`, `-novoip`, `-useTimeStampedLogFileNames=`, `-debugtranslation`. [A]
 3. **The user's Steam launch passes `-debug` on purpose,** as a safety net against game bugs. It adds per-instruction Lua overhead (`performance-debugging.md`), but don't ask them to drop it. [C, 2026-11-01]
 
-## 4. Standalone Java agents (CutawayFix, ErrorMonitor)
+## 4. Former standalone Java agents (CutawayFix, ErrorMonitor)
 
-These two predate the ZombieBuddy decision (section 5) and stay as they are: personal tools, not published. Any new Java code goes through ZombieBuddy instead. Each ships `install.ps1`/`uninstall.ps1` that back up and restore `ProjectZomboid64.json`.
+Until 2026-11-11 these two were standalone `-javaagent`s with ASM transformers, wired into `ProjectZomboid64.json` by `install.ps1`. Both are now ZombieBuddy plugins (section 5). Their agent lines were removed with each mod's `uninstall.ps1` (backup `save-backups\ProjectZomboid64.json.before-zb-migration_2026-11-11`); the old agent code is in git history. The notes below are kept in case a standalone agent is ever needed again.
 
-0. **JDK.** Temurin JDK 25 is at `C:\Users\alpar\scoop\apps\temurin25-jdk\current` (`JAVA_HOME`, installed 2026-11-07 via scoop bucket `java`). Both agents' `build.ps1` pick it up through `JAVA_HOME` and build cleanly. The older JDK 17 is still on PATH. [C]
+0. **JDK.** Temurin JDK 25 is at `C:\Users\alpar\scoop\apps\temurin25-jdk\current` (`JAVA_HOME`, installed 2026-11-07 via scoop bucket `java`). Every `build.ps1` picks it up through `JAVA_HOME` or `-JdkBin`. The older JDK 17 is still on PATH. [C]
 
 1. **The exe and the `.bat` files start the JVM differently.**
    1. `ProjectZomboid64.exe` embeds the JVM, so `-javaagent` in `ProjectZomboid64.json` fails on its own. The JDK 17 on PATH supplies incompatible `jli.dll`/`java.dll`. Fix: list a native `-agentpath:<preload>.dll` first; its `Agent_OnLoad` loads `java.dll` and `jli.dll` from `jre64\bin` by full path. [C]
@@ -67,19 +67,11 @@ These two predate the ZombieBuddy decision (section 5) and stay as they are: per
 4. **Absolute agent paths in `ProjectZomboid64.json` stop the game from launching** if the mod folder moves or is deleted. Say so to the user. [I]
 5. **Hooks that call game methods directly** throw `NoSuchMethodError` inside the game loop after an update renames something. Make the transformer skip a patch when its bytecode pattern doesn't match. [A]
 6. **Steam updates can overwrite `ProjectZomboid64.json`.** The exe also reads `ProjectZomboid64.site.json`, which may survive updates (untested). [I]
-7. **Agents add Java-side cost** that the Lua tools can't see. For example, CutawayFix forces a cutaway recheck about every 6 frames. Profile with JFR (`performance-debugging.md`).
-8. **Several agents coexist.** [A, untested in game]
-   1. Each mod's `install.ps1` inserts its own `-agentpath` preload and `-javaagent` at the top of `vmArgs`, and removes only its own lines.
-   2. ErrorMonitor goes first, so it records before CutawayFix starts.
-   3. Both jars bundle the identical ASM 9.9 unshaded. The first copy on the classpath wins, which is harmless while the versions match. Shade it, or keep the versions equal.
-   4. They patch different classes: ErrorMonitor patches `DebugLog`, `DebugLogStream` and `GameWindow`; CutawayFix patches render and world classes.
-9. **Testing an agent without launching the game.** This worked for ErrorMonitor on 2026-11-04. [C]
-   1. From the game folder, run `jre64\bin\java.exe -javaagent:<agent.jar> -Ddeployment.user.cachedir=%TEMP%\harness -Djava.awt.headless=true -Djava.library.path=win64/;. --enable-native-access=ALL-UNNAMED -cp projectzomboid.jar;<harness classes> Harness`.
-   2. The harness has to call `RandStandard.INSTANCE.init()` and `RandLua.INSTANCE.init()` before anything logs; otherwise `GameClient`'s static init fails with `NoClassDefFoundError`. Then call `DebugLog.getInstance().init()`.
-   3. For Lua, create `new KahluaThread(J2SEPlatform.getInstance(), env)`, set `thread.debugOwnerThread = Thread.currentThread()` (otherwise `pcall` throws an NPE), assign it to `LuaManager.thread`, and load code with `LuaCompiler.loadstring(src, name, env)`.
-   4. ErrorMonitor's harness is `mods\ErrorMonitor\java\test\Harness.java`.
-   5. The `cachedir` property moves the game's `Zomboid` folder, so the test doesn't write into the real one.
-   6. This proves hooks and threads, not in-game behaviour.
+7. **Java hooks add cost** that the Lua tools can't see. For example, CutawayFix forces a cutaway recheck about every 6 frames. Profile with JFR (`performance-debugging.md`).
+8. **Testing game logging without launching the game** (worked 2026-11-04; the harness was `ErrorMonitor/java/test/Harness.java`, now in git history). [C]
+   1. Call `RandStandard.INSTANCE.init()` and `RandLua.INSTANCE.init()` before anything logs; otherwise `GameClient`'s static init fails with `NoClassDefFoundError`. Then call `DebugLog.getInstance().init()`.
+   2. For Lua, create `new KahluaThread(J2SEPlatform.getInstance(), env)`, set `thread.debugOwnerThread = Thread.currentThread()` (otherwise `pcall` throws an NPE), assign it to `LuaManager.thread`, and load code with `LuaCompiler.loadstring(src, name, env)`.
+   3. `-Ddeployment.user.cachedir=<temp>` moves the game's `Zomboid` folder, so the test doesn't write into the real one.
 
 ## 5. ZombieBuddy: the Java layer for our mods
 
@@ -91,7 +83,7 @@ Decision (2026-11-07): new Java code in our mods is a ZombieBuddy plugin, not an
 4. **Patches.** `@Patch(className, methodName)` classes in the package, with `@Patch.OnEnter` (`skipOn = true` + `boolean` return skips the original) and `@Patch.OnExit`. Bindings: `@Patch.This`, `@Patch.Argument(n)`, `@Patch.Return(readOnly = false)`, `@Patch.Field`, `@Patch.Local`. Optional `Main.main` runs at load. Keep each patch a thin hook into our own code, so the loader can be swapped if ZombieBuddy is abandoned.
 5. **Lua bindings.** `@Exposer.LuaClass` on a class, or `@LuaMethod(name, global = true)` on static methods.
 6. **Players.** One-time setup: subscribe, then the Windows installer or copy `ZombieBuddy.jar` and `zbNative.dll` from the Workshop `libs\` into `<install>` and add `-agentlib:zbNative` (Steam launch options: `-agentlib:zbNative --`). Each new or changed jar asks for approval once; signed authors can be trusted wholesale (`doc/ModSigning.md`). Its own Lua shows install instructions at the main menu when the agent is missing.
-7. **On this machine the installer's JSON change is just `-agentlib:zbNative` at the top of `vmArgs`,** and `SET _JAVA_OPTIONS=-agentlib:zbNative` in the `.bat` (from its `installer/testdata/launchers/42.17/patched`). It can sit beside our two agents' lines. Installed by hand on 2026-11-07: v2.3.4 `ZombieBuddy.jar` and `zbNative.dll` copied from the Workshop `libs\` into `<install>`, `-agentlib:zbNative` added after CutawayFix's lines in `vmArgs`, and `SET _JAVA_OPTIONS=-agentlib:zbNative` in `ProjectZomboid64.bat`. Backups: `Zomboid\save-backups\ProjectZomboid64.{json,bat}.before-zombiebuddy_2026-11-07`. Not yet confirmed in game.
+7. **On this machine the installer's JSON change is just `-agentlib:zbNative` at the top of `vmArgs`,** and `SET _JAVA_OPTIONS=-agentlib:zbNative` in the `.bat` (from its `installer/testdata/launchers/42.17/patched`). Since 2026-11-11 it is the only agent in `vmArgs`. Installed by hand on 2026-11-07: v2.3.4 `ZombieBuddy.jar` and `zbNative.dll` copied from the Workshop `libs\` into `<install>`, `-agentlib:zbNative` added to `vmArgs`, and `SET _JAVA_OPTIONS=-agentlib:zbNative` in `ProjectZomboid64.bat`. Backups: `Zomboid\save-backups\ProjectZomboid64.{json,bat}.before-zombiebuddy_2026-11-07`. Not yet confirmed in game.
 8. **Debugging.** Start with `-agentlib:zbNative=experimental` for `ZombieBuddy.Watches.Add(class, method)` (logs every call with arguments) and `zbinspect`/`zbmethods`/`zbget`; `verbosity=1` logs patch transformations.
 9. **Confirmed from the 2.3.4 bytecode (2026-11-08)** [A]:
    1. Mod jars are added with `Instrumentation.appendToSystemClassLoaderSearch`, so inlined advice inside game classes can call our classes. Methods the advice calls must be `public`, because the advice runs inside the patched class's package.
@@ -100,4 +92,8 @@ Decision (2026-11-07): new Java code in our mods is a ZombieBuddy plugin, not an
    4. New jars go through an approval prompt (`JarDecisionTable`, `ModApprovalsStore`) the first time they load.
    5. Jars load on every `ZomboidFileSystem.loadMods`, from that call's mod list: at the main menu that is `mods\default.txt`, at save load the save's `mods.txt`. Classes already loaded are retransformed. So a patch that must affect main-menu code (the load screen's `getSaveInfo`) needs its mod in `default.txt` too. [C: console.txt 2026-11-11, menu `loadMods(8 mods)` listed no jars, save `loadMods(21 mods)` loaded both and retransformed `Food`]
 10. **Building plugin jars.** The `javac` on PATH is JDK 17, which can't read the game's Java 25 class files. Use `build.ps1 -JdkBin C:\Users\alpar\scoop\apps\temurin25-jdk\current\bin`. Wrap the source list in `@(...)`: with one source file, `@sources` splats the path as single characters. ZombieBuddy 2.3.4 patches fine on 42.22.2; it applied SensibleRefrigerationZB's two `Food` patches on 2026-11-09. [C]
-11. **Contributing upstream.** Small single-purpose PRs get merged within days; large bundled ones get closed or sit. No contributing guide. Only send fixes for bugs we actually hit; build everything else in our own mods.
+11. **Porting bytecode patches to ZombieBuddy** (CutawayFix and ErrorMonitor, 2026-11-11, from the decompiled 2.3.4 `PatchEngine`). [A, not yet confirmed in game]
+   1. Overloads are chosen by the advice's `@Patch.Argument` types: a target matches when it has enough parameters and each bound one is assignable to the advice's type. `Object` matches anything, so bind the real game types (`DebugLogStream.printException` has 3 overloads).
+   2. There is no raw bytecode access. A fix that changed one instruction inside a vanilla method becomes `@Patch.OnExit` advice that recomputes the right value from public members and corrects the stored field or the `@Patch.Return`.
+   3. `javaPreload=true` (load at JVM start) needs a signed jar (`doc/ModdingGuide.md` "Preload Mods"). Without it, a plugin starts at the first `loadMods` that lists it, so ErrorMonitor is in `default.txt` to record from the main menu on.
+12. **Contributing upstream.** Small single-purpose PRs get merged within days; large bundled ones get closed or sit. No contributing guide. Only send fixes for bugs we actually hit; build everything else in our own mods.

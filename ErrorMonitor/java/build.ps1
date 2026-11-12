@@ -1,20 +1,18 @@
-# Builds ErrorMonitor-agent.jar next to this script. The agent never references game classes at compile
-# time (hooks take Object parameters and are wired in by name), so any JDK 17+ works.
+# Builds 42\media\java\ErrorMonitor.jar. Needs a JDK 25+ (javac must read the game's Java 25 class files)
+# and ZombieBuddy.jar in the game folder, which ZombieBuddy's install puts there.
+# Offline replay of an old console.txt: java -cp "ErrorMonitor.jar;<game>\projectzomboid.jar" errormonitor.Replay <console.txt>
 param(
-    [string]$JdkBin = "",
-    [string]$Output = "",
-    [string]$Zig = ""
+    [string]$GameDir = "C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid",
+    [string]$JdkBin = ""
 )
 
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 $build = Join-Path $root "build"
 $classes = Join-Path $build "classes"
-$output = if ($Output) { $Output } else { Join-Path $root "ErrorMonitor-agent.jar" }
-$libs = @(
-    (Join-Path $root "lib\asm-9.9.jar"),
-    (Join-Path $root "lib\asm-tree-9.9.jar")
-)
+$output = Join-Path $root "..\42\media\java\ErrorMonitor.jar"
+$gameJar = Join-Path $GameDir "projectzomboid.jar"
+$zbJar = Join-Path $GameDir "ZombieBuddy.jar"
 
 function Find-Tool([string]$name) {
     if ($JdkBin) { return Join-Path $JdkBin "$name.exe" }
@@ -24,51 +22,25 @@ function Find-Tool([string]$name) {
     }
     $cmd = Get-Command $name -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
-    throw "$name not found. Install a JDK 17+ or pass -JdkBin <path to jdk\bin>."
+    throw "$name not found. Install a JDK 25+ or pass -JdkBin <path to jdk\bin>."
 }
 
 $javac = Find-Tool "javac"
 $jar = Find-Tool "jar"
+foreach ($dep in @($gameJar, $zbJar)) {
+    if (-not (Test-Path $dep)) { throw "$dep not found" }
+}
 
 if (Test-Path $build) { Remove-Item -Recurse -Force $build }
 New-Item -ItemType Directory -Force $classes | Out-Null
+New-Item -ItemType Directory -Force (Split-Path $output) | Out-Null
 
-$sources = Get-ChildItem -Recurse (Join-Path $root "src") -Filter *.java | ForEach-Object { $_.FullName }
-& $javac --release 17 -nowarn -encoding UTF-8 -cp ($libs -join ";") -d $classes @sources
+$sources = @(Get-ChildItem -Recurse (Join-Path $root "src") -Filter *.java | ForEach-Object { $_.FullName })
+& $javac --release 17 -nowarn -Xlint:-classfile -encoding UTF-8 -cp "$gameJar;$zbJar" -d $classes @sources
 if ($LASTEXITCODE -ne 0) { throw "javac failed" }
 
-# ASM is bundled inside the agent jar; the game does not ship it.
-Push-Location $classes
-try {
-    foreach ($lib in $libs) {
-        & $jar xf $lib
-        if ($LASTEXITCODE -ne 0) { throw "could not unpack $lib" }
-    }
-    Remove-Item -Recurse -Force "META-INF" -ErrorAction SilentlyContinue
-    Remove-Item -Force "module-info.class" -ErrorAction SilentlyContinue
-} finally {
-    Pop-Location
-}
-
-$manifest = Join-Path $build "MANIFEST.MF"
-Set-Content -Path $manifest -Encoding ASCII -Value @(
-    "Premain-Class: errormonitor.Agent",
-    "Main-Class: errormonitor.Replay",
-    "Can-Redefine-Classes: false",
-    "Can-Retransform-Classes: false",
-    ""
-)
-
 if (Test-Path $output) { Remove-Item -Force $output }
-& $jar cfm $output $manifest -C $classes .
+& $jar cf $output -C $classes .
 if ($LASTEXITCODE -ne 0) { throw "jar failed" }
 Remove-Item -Recurse -Force $build
-Write-Host "Built $output"
-
-# The preload DLL rarely changes, so it is only rebuilt when a Zig compiler is given.
-if ($Zig) {
-    $dll = Join-Path $root "ErrorMonitor-preload.dll"
-    & $Zig cc -shared -O2 -s -target x86_64-windows-gnu -o $dll (Join-Path $root "native\preload.c") -lkernel32
-    if ($LASTEXITCODE -ne 0) { throw "zig cc failed" }
-    Write-Host "Built $dll"
-}
+Write-Host "Built $((Resolve-Path $output).Path)"

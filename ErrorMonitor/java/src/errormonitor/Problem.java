@@ -91,6 +91,37 @@ final class Problem {
         return stack.isEmpty() ? null : Trace.stripModule(stack.get(0));
     }
 
+    // A copy whose counters no longer change, for rendering the report without holding Monitor.lock.
+    private Problem(Problem p) {
+        id = p.id;
+        error = p.error;
+        subsystem = p.subsystem;
+        title = p.title;
+        text = p.text;
+        exceptionClass = p.exceptionClass;
+        contextMessage = p.contextMessage;
+        trace = p.trace;
+        stack = p.stack;
+        caller = p.caller;
+        silenced = p.silenced;
+        before = p.before;
+        stateAtFirst = p.stateAtFirst;
+        first = p.first;
+        mod = p.mod;
+        failedOutsideMod = p.failedOutsideMod;
+        modsInStack = p.modsInStack;
+        where = p.where;
+        last = p.last;
+        count = p.count;
+        examples.addAll(p.examples);
+        callers.putAll(p.callers);
+        otherCallers = p.otherCallers;
+    }
+
+    Problem snapshot() {
+        return new Problem(this);
+    }
+
     String source() {
         if (mod != null) {
             return mod;

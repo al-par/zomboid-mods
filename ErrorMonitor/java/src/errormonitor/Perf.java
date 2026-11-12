@@ -376,7 +376,7 @@ final class Perf {
             f.lastCaptureNs = now;
             main = mainThread;
         }
-        String capture = capture(now - f.startNs, main, sites, lineNumbers, depth);
+        String capture = capture(now - f.startNs, main, sites, lineNumbers, depth, luaProfiling());
         synchronized (lock) {
             f.captures.add(capture);
             if (started) {
@@ -391,10 +391,12 @@ final class Perf {
             + seconds(now - f.startNs) + " (" + Monitor.describeState(f.state) + ")\n" + capture);
     }
 
-    private static String capture(long stalledNs, Thread main, LuaStack.Site[] sites, int[] lineNumbers, int depth) {
+    private static String capture(long stalledNs, Thread main, LuaStack.Site[] sites, int[] lineNumbers, int depth, boolean luaSampled) {
         StringBuilder b = new StringBuilder();
         b.append("    after ").append(seconds(stalledNs)).append(", the main thread was ");
-        if (depth > 0) {
+        if (!luaSampled) {
+            b.append("not checked for Lua (the Error Monitor Lua mod isn't running yet).\n");
+        } else if (depth > 0) {
             b.append("running Lua:\n");
             for (int i = 0; i < depth && i < 20; i++) {
                 b.append("        ").append(sites[i].function).append("  ").append(sites[i].file).append(':').append(lineNumbers[i])

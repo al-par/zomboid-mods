@@ -47,7 +47,7 @@ The stutter every 10 game minutes, frame time while driving, and the forked mods
    [C]
 5. **Log levels.** Set them with `-debuglog=Lua,Mod` or `debuglog.cfg`. With `-debug`, every category logs at General. [A, C]
 6. **Crash or forced exit.** A `console.txt` with no shutdown lines at the end means the game crashed or was killed. [I]
-7. **ErrorMonitor (`mods\ErrorMonitor`).** It's a Java agent plus a small Lua mod, confirmed working in game since 2026-11-04. Prefer its output to `console.txt`. [C]
+7. **ErrorMonitor (`mods\ErrorMonitor`).** It's a ZombieBuddy plugin plus a small Lua mod (a standalone agent, confirmed working in game, from 2026-11-04 to 2026-11-11; the plugin version is not yet tested in game). Prefer its output to `console.txt`. [C]
    1. **Output:** one folder per launch, `Zomboid\ErrorMonitor\<yyyy-MM-dd_HH-mm-ss>\`, holding four files.
       1. `errors.txt` lists each distinct error and warning once, with a count, the mod, the Lua stack, the call paths, and the log lines before the first occurrence.
       2. `session.log` is the whole session in order, with repeated lines collapsed into counts.

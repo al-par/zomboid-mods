@@ -1,4 +1,8 @@
 name=Cutaway Fix
 id=CutawayFix
-description=Fixes Build 42 cutaway bugs: roofs you built onto an existing house staying drawn over you, wall cutaways going stale until you move, and chunks not redrawing when cutaways change. The fixes are a Java patch enabled by install.ps1 in the mod folder; this mod warns in game if that patch is not running.
-modversion=1.0
+description=Fixes Build 42 cutaway bugs: roofs you built onto an existing house staying drawn over you, wall cutaways going stale until you move, and chunks not redrawing when cutaways change. The fixes are Java and need the ZombieBuddy Java mod loader; without it this mod warns in game and does nothing.
+javaJarFile=media/java/CutawayFix.jar
+javaPkgName=cutawayfix
+ZBVersionMin=2.3.0
+ZBVersionMax=2.99.99
+modversion=2.0

@@ -129,6 +129,47 @@ final class Monitor {
         log.note(started, "===", source == null ? "Error Monitor started recording" : "Error Monitor replay of " + source);
     }
 
+    private long collapsedAtSnapshot;
+
+    // A frozen copy of what Report reads, taken under `lock` so the report can be rendered without it:
+    // every game thread that logs waits on `lock`, and rendering thousands of problems takes a while.
+    private Monitor(Monitor m) {
+        config = m.config;
+        dir = m.dir;
+        started = m.started;
+        live = m.live;
+        luaDir = m.luaDir;
+        source = m.source;
+        previousCrash = m.previousCrash;
+        log = null;
+        collapsedAtSnapshot = m.collapsedTotal();
+        for (Problem p : m.errors) {
+            errors.add(p.snapshot());
+        }
+        for (Problem p : m.warnings) {
+            warnings.add(p.snapshot());
+        }
+        errorTotal = m.errorTotal;
+        warningTotal = m.warningTotal;
+        overflowTotal = m.overflowTotal;
+        hooks.putAll(m.hooks);
+        internal.addAll(m.internal);
+        internalCount = m.internalCount;
+        Context c = m.context;
+        context.state = c.state;
+        context.version = c.version;
+        context.debug = c.debug;
+        context.mode = c.mode;
+        context.gameMode = c.gameMode;
+        context.save = c.save;
+        context.reportedAt = c.reportedAt;
+        context.mods.addAll(c.mods);
+        contextHistory.addAll(m.contextHistory);
+        silencedSubsystems.addAll(m.silencedSubsystems);
+        ended = m.ended;
+        perf = m.perf;
+    }
+
     // ---- startup ----
 
     static void start() {
@@ -685,37 +726,57 @@ final class Monitor {
         writeReport(now);
         if (live) {
             Sessions.writeState(dir, "ended", now);
-            new File(luaDir, STATUS_FILE).delete();
+            synchronized (writeLock) {
+                new File(luaDir, STATUS_FILE).delete();
+            }
         }
     }
 
+    // The worker and the shutdown hook both write files. Each write snapshots, renders and moves under
+    // writeLock, so the later writer always renders the later state and the .tmp files never collide.
+    private final Object writeLock = new Object();
+
     private void writeReport(long now) {
-        String text;
-        synchronized (lock) {
-            text = Report.render(this, now);
-            reportDirty = false;
-            reportUrgent = false;
-            lastReportAt = now;
-        }
-        try {
-            writeAtomically(new File(dir, REPORT_FILE), text);
-        } catch (IOException e) {
-            agentProblem("writing errors.txt", e);
+        synchronized (writeLock) {
+            Monitor frozen;
+            synchronized (lock) {
+                frozen = new Monitor(this);
+                reportDirty = false;
+                reportUrgent = false;
+                lastReportAt = now;
+            }
+            String text = Report.render(frozen, now);
+            try {
+                writeAtomically(new File(dir, REPORT_FILE), text);
+            } catch (IOException e) {
+                agentProblem("writing errors.txt", e);
+            }
         }
     }
 
     private void writePerf(long now) {
-        lastPerfAt = now;
-        try {
-            writeAtomically(new File(dir, Perf.REPORT_FILE), PerfReport.render(perf, this, now, Jfr.status));
-        } catch (IOException e) {
-            agentProblem("writing " + Perf.REPORT_FILE, e);
+        synchronized (writeLock) {
+            lastPerfAt = now;
+            try {
+                writeAtomically(new File(dir, Perf.REPORT_FILE), PerfReport.render(perf, this, now, Jfr.status));
+            } catch (IOException e) {
+                agentProblem("writing " + Perf.REPORT_FILE, e);
+            }
         }
     }
 
     private void writeStatus(long now) {
+        synchronized (writeLock) {
+            writeStatusLocked(now);
+        }
+    }
+
+    private void writeStatusLocked(long now) {
         String text;
         synchronized (lock) {
+            if (closed) {
+                return;
+            }
             text = Report.status(this, now);
             statusDirty = false;
             lastStatusAt = now;
@@ -735,7 +796,7 @@ final class Monitor {
     }
 
     long collapsedTotal() {
-        return log.collapsedTotal();
+        return log == null ? collapsedAtSnapshot : log.collapsedTotal();
     }
 
     static void writeAtomically(File file, String text) throws IOException {

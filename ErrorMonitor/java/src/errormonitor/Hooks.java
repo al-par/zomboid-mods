@@ -2,9 +2,16 @@ package errormonitor;
 
 import java.lang.reflect.Method;
 
-// Called from patched game bytecode. Signatures must match the descriptors in Transformer. Nothing here may
-// throw back into the game, and a hook that triggers more logging on the same thread is ignored.
+// Called from the advice in Patches, inlined into game methods. Nothing here may throw back into the game,
+// and a hook that triggers more logging on the same thread is ignored.
 public final class Hooks {
+    static final String LOG_LINES = "log_lines";
+    static final String TRACE_LINES = "stack_trace_lines";
+    static final String EXCEPTIONS = "exceptions";
+    static final String MESSAGES = "error_and_warning_calls";
+    static final String FRAMES = "frame_timing";
+    static final String[] ALL = { LOG_LINES, TRACE_LINES, EXCEPTIONS, MESSAGES, FRAMES };
+
     private static final ThreadLocal<boolean[]> busy = ThreadLocal.withInitial(() -> new boolean[1]);
     private static volatile Method isLogEnabled;
     private static volatile Method getDebugType;

@@ -97,7 +97,7 @@ final class Report {
                 missing.add(e.getKey() + " (" + e.getValue() + ")");
             }
         }
-        int total = Transformer.HOOKS.length - off;
+        int total = Hooks.ALL.length - off;
         if (m.hooks.size() - off < total) {
             b.append("Hooks     ").append(m.hooks.size() - off).append(" of ").append(total).append(" installed so far\n");
         } else if (missing.isEmpty()) {
