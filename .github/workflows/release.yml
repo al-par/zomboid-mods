@@ -1,0 +1,36 @@
+# Push a tag <ModFolder>-v<version> (for example ReviveMe-v1.0) to publish that mod's folder as a zip.
+name: Release mod
+
+on:
+  push:
+    tags:
+      - "*-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Zip the mod folder
+        id: zip
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          mod="${tag%-v*}"
+          if [ ! -f "$mod/42/mod.info" ] && [ ! -f "$mod/mod.info" ]; then
+            echo "::error::$mod is not a mod folder (no mod.info)"
+            exit 1
+          fi
+          zip -r "$tag.zip" "$mod" -x "$mod/tools/*" "$mod/.gitignore" "*/__pycache__/*"
+          echo "mod=$mod" >> "$GITHUB_OUTPUT"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$GITHUB_REF_NAME.zip" \
+            --title "${{ steps.zip.outputs.mod }} ${GITHUB_REF_NAME##*-v}" \
+            --notes "Unzip into your Zomboid\\mods folder. Mods with a Java part need the ZombieBuddy mod loader; see the mod's description."

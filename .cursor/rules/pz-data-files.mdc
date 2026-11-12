@@ -1,0 +1,32 @@
+---
+description: B42 syntax for mod.info, scripts, translations and sandbox options in Project Zomboid mods
+globs: **/mod.info,**/media/scripts/**/*.txt,**/Translate/**,**/sandbox-options.txt,**/registries.lua
+alwaysApply: false
+---
+
+# Project Zomboid B42 data files
+
+Details: `docs/mod-structure.md`, `docs/scripts.md`, `docs/world-objects.md`.
+
+## mod.info and folders
+1. B42 reads `common/mod.info` or `<versionFolder>/mod.info` (version folder wins); a root `mod.info` is B41 only. `common/` is optional.
+2. The version folder is picked by folder **name** (highest ≤ game version; `42.22/` is ignored on 42.21). `versionMin`/`versionMax` only gate availability; a bare `42` is invalid.
+3. `tiledef=<name> <100..8189>`: scan every installed `mod.info` for collisions first; never renumber. Tile changes need a full restart.
+4. Mod ids in `require`/`mods.txt` have `\` stripped. On duplicate ids the Workshop copy beats the local one.
+
+## Scripts (`media/scripts/*.txt`)
+1. Always `Key = Value,` with full `Base.` ids; comments are `/* */`. B41 `Key : Value` lines break parsing and can break unrelated UI.
+2. `ItemType = base:normal|food|drainable|moveable|...`; `base:heavyitem` is a tag. Custom tags need `ItemTag.register("mymod:tag")` in `media/registries.lua`.
+3. Recipes are `craftRecipe` with `inputs{}`/`outputs{}`; copy from `media/scripts/generated/recipes/*.txt`. No mode = Normal; `-fluid` follows its container's `item` line; no `+fluid`. `timedAction` names come from `generated/timedactions.txt`.
+4. Check every id against `generated/items/*.txt` (B42 renamed many: `TreeBranch2`, `WoodenStick2`, ...).
+5. A map tile picked up becomes `Moveables.<spriteName>`, not `Base.Mov_*`, unless the tile has `CustomItem`.
+6. General repair is craftRecipes (`recipes_fixing.txt`); `fixing.txt` only holds firearm self-repair.
+
+## Translations
+1. JSON only (since 42.15), flat objects: `{ "Base.MyItem": "My Item" }`. Only known file names load (`ItemName`, `Recipes`, `Tooltip`, `ContextMenu`, `IG_UI`, `Sandbox`, `Mod`, ...); others are silently ignored.
+2. Literal `%` must be `%%`.
+
+## sandbox-options.txt
+1. `VERSION = 1,` first; `option ModId.Name { type = boolean|integer|double|string|enum, default = ..., page = ModId, translation = Key, }`. No `--` comments.
+2. Keys in `Sandbox.json`: `Sandbox_<page>`, `Sandbox_<translation>`, `_tooltip`, `Sandbox_<valueTranslation or translation>_option<N>`.
+3. Existing saves keep stored values. Removing a mod leaves harmless `unknown SandboxOption` errors; warn the user.

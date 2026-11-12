@@ -1,0 +1,37 @@
+---
+description: Kahlua, B42 Lua API, multiplayer and performance traps for Project Zomboid mods
+globs: **/*.lua
+alwaysApply: false
+---
+
+# Project Zomboid B42 Lua traps
+
+Details: `docs/lua.md`, `docs/multiplayer.md`, `docs/performance-debugging.md`.
+
+## Kahlua runtime
+1. Missing: `next`, `xpcall`, `io`, `math.random` (use `ZombRand`). `os` has only `date/difftime/time`. `string.split` takes a Java regex. `%` truncates toward zero.
+2. `math.min(x, f())` passes every return of `f`; wrap as `(f())`. `ipairs` stops at the first `nil`. Java lists are 0-based: `:size()`, `:get(i)`.
+3. Load order `shared` → `client` → `server`. A failed `require` is only a WARN; the crash comes later (`derive of non-table: null`). Classes deriving from `ISBuildingObject` go in `server/`.
+4. `server/` also runs in SP and on MP clients (`if isClient() then return end` for server-only files). `OnGameStart`/`OnLoad`/`OnPlayerUpdate`/`OnRenderTick` are client/SP only; `OnTick` also runs on servers. `OnGameBoot` handlers in `server/` never run in SP.
+5. Java instance fields are never readable/writable; reflection globals only work with `-debug`.
+6. `Events.X.Add(nil)` is silently ignored: check handler names.
+
+## B41 APIs that no longer exist
+```lua
+-- BAD (B41)                         -- GOOD (B42)
+stats:getEndurance()                 stats:get(CharacterStat.ENDURANCE)
+player:HasTrait("Burglar")           player:hasTrait(CharacterTrait.BURGLAR)
+props:Is("X") / props:Val("X")       props:has("X") / props:get("X")
+props:has("WallN")                   props:has(IsoFlagType.WallN)   -- wall/door/window/hoppable are flags
+math.random(10)                      ZombRand(10)
+```
+`ISWorldObjectContextMenu.doWashClothingMenu`, `handleInteraction`, `getSquaresInRadius`, `ISFireplaceMenu`, `ISBBQMenu.onAddAllFuel` are gone; wrapping them silently does nothing. Add/modify options in `Events.OnFillWorldObjectContextMenu` via `context:getOptionFromName(...)`. `addGetUpOption` shifts params (`param3` = your first argument).
+
+## Multiplayer
+1. An action with `complete()` is networked: file in `shared/`, `derive("X")` name equals the global, every `new()` param stored under the same field name, `isValid()`/`complete()` return `true`. The server never runs `update()`.
+2. Command args: string/number keys; send coordinates/IDs, not objects. Items across the network are new objects: `getItemWithID(id)`, not `contains(item)`.
+
+## Performance
+1. `OnTick`/`OnPlayerUpdate`/`render` run every frame: throttle, cache Java calls in locals, don't walk zombie/animal/object lists per tick.
+2. `LoadGridsquare` fires per loaded square: reject cheaply, no string keys, no `pcall`.
+3. `Every*` events all fire on one frame: spread big scans over ticks. Fire `OnContainerUpdate` once per batch. Never `sendClientCommand` per tick.

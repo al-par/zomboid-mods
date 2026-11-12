@@ -1,0 +1,19 @@
+# Forks of other authors' mods: personal, never published. Each keeps its own local repo.
+/CarryVisibleGeneratorsFork/
+/CommonSenseFork/
+/DrawOnMapFork/
+/PlaceAnywhereFork/
+/ProximityInventoryFork/
+# Contains forked crack-repair code until it is rewritten (docs/save-manifest.md).
+/SensibleWalls/
+
+# Not ours or not in scope
+/examplemod/
+/MildewCure/
+/ReviveGil/
+
+# Local game state
+/default.txt
+/reset-mods-*.txt
+
+__pycache__/

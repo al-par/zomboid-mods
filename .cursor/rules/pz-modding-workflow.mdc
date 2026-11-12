@@ -1,0 +1,36 @@
+---
+description: Project Zomboid Build 42 modding workflow and the mistakes past agents kept making
+alwaysApply: true
+---
+
+# Project Zomboid B42 modding: workflow
+
+Game is 42.21. Docs live in `docs/` (start at `docs/README.md`; read the topic file before designing or debugging). The local mods still have many unfound bugs and poor performance: never treat their code as a correct example without checking vanilla. Update the docs when you confirm or disprove something.
+
+## Before writing code
+1. Identify the exact object: map tile (`IsoObject`), player-built (`IsoThumpable` from a B42 entity script), moveable item, or script item.
+2. Grep vanilla (`C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid\media\lua`, `media\scripts\generated`) before claiming a mechanic exists or quoting a number.
+3. Not in vanilla Lua means it's Java (`projectzomboid.jar`); Lua can't change rendering, collision, animal AI, physics, or most of the world context menu.
+4. Something broken or slow? Read the log first (`C:\Users\alpar\Zomboid\console.txt`, or ErrorMonitor output once it exists); group exceptions by message.
+5. Implement the user's spec literally; no extra steps, immunities or categories.
+
+## While coding
+1. Copy an existing vanilla call site for every API; a signature existing is not proof of correct use.
+2. Never edit `steamapps\workshop\content\108600\...`; make a local patch mod with its own mod id.
+3. Edit files with the editor tools, never PowerShell `Get-Content | Set-Content`.
+4. No `pcall` to silence errors. Check the cost of every frequent event you register (`docs/performance-debugging.md`).
+
+## Before saying "done"
+1. Top-level `require`/`derive`/globals resolve in the same or an earlier folder (`shared` → `client` → `server`).
+2. Every `Base.X` exists in vanilla `scripts/generated/items` or the mod's scripts; every translation key is in a loaded `.json`.
+3. Javap, luaparser and mock tests prove syntax/signatures only. Say what was tested in game and what wasn't.
+
+## Enabling and testing
+1. A save loads `Zomboid\Saves\<Mode>\<save>\mods.txt`; `mods\default.txt` and the main-menu Mods screen don't affect existing saves.
+2. Edit `mods.txt` only when `Get-Process ProjectZomboid64 -ErrorAction SilentlyContinue` returns nothing; back it up first.
+3. Don't launch the game; ask the user. Afterwards confirm the log's line 1 is newer than your edits, `loading <ModId>` appears, and your files raise no errors.
+4. Ask before touching save data beyond `mods.txt`.
+
+## Communicating
+1. When the user says it doesn't work, your model is wrong; gather evidence instead of arguing.
+2. The thing the user asked for stays first, even when scope widens.
