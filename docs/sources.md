@@ -28,6 +28,16 @@ Most Project Zomboid modding material online predates Build 42, or predates 42.1
 | [Unjammer/TileZed (B42)](https://github.com/Unjammer/TileZed) | Community B42 tile tools | TIS hasn't released B42 TileZed |
 | [pzcodex.com](https://pzcodex.com) | Recipe and building database with raw scripts | 42.21 |
 
+## 1a. Code to start from
+
+Don't write boilerplate from scratch; start from these and adjust to our rules (`sensible-architecture.md`). Vanilla Lua and scripts stay the best example of any API call. All [O], found 2026-11-14, not yet used here.
+
+1. [pzmc-template](https://github.com/Project-Zomboid-Community-Modding/pzmc-template) (community template, GPL-3, [wiki page](https://pzwiki.net/wiki/Project_Zomboid_Community_Modding_template/en)): Workshop item layout with `Contents/mods/<Mod>/`, `common/` and `42/`. Use it for structure; last revised for 42.12, so check translations and folders against `mod-structure.md`.
+2. [ZBHelloWorld](https://github.com/zed-0xff/ZBHelloWorld) (ZombieBuddy's author): smallest patch-only Java mod, with Gradle build. It uses `require=\ZombieBuddy`; we don't (`sensible-architecture.md` §3 item 3).
+3. [ZombieBuddy README](https://github.com/zed-0xff/ZombieBuddy) and `doc/ModdingGuide.md`: `mod.info` keys, `@Patch` examples, `ZBVersionMin`/`ZBVersionMax`. Other examples by the same author: [ZBLuaPerfMon](https://github.com/zed-0xff/ZBLuaPerfMon).
+4. [zb-gradle-plugin](https://github.com/zed-0xff/zb-gradle-plugin): signs jars (`signJarZBS` writes `<Mod>.jar.zbs`; the public key goes in the Steam profile as `JavaModZBS:<hex>`). This is the signing route for Sensible Core's "trust once" goal; it would replace our hand-copied `build.ps1` scripts.
+5. [Umbrella](https://github.com/PZ-Umbrella/Umbrella) (section 1): typings, so an editor or model sees real signatures.
+
 ## 2. Use with care
 
 | Source | Problem |
