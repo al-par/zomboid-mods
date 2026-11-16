@@ -85,8 +85,17 @@ Definitions: `media/lua/shared/Definitions/animal/*.lua` (`AnimalDefinitions.ani
    2. Per appliance draw: fridge-freezer 0.13, single fridge or freezer 0.08, light 0.002, stove or washer 0.09, TV 0.03.
    3. These draws are not litres per hour. `IsoGenerator.update` burns `totalPowerUsing × SandboxVars.GeneratorFuelConsumption` litres each game hour, and every vanilla preset sets that option to 0.1. A generator running three fridge-freezers burns (0.02 + 3 × 0.13) × 0.1 = 0.041 L/h, so a full tank lasts about 10 days.
    4. Billing is cached hourly per generator. Overlapping generators each bill the same appliance.
-4. **There's no vanilla extension-cable item.** [I]
-5. **Barrel moveables (`Mov_*Barrel`)** have no `EquipBothHands` and no fluid container. [C]
+   5. Fridges and freezers always draw. Stoves, washers, TVs and lights (not street lights) draw only while switched on. Radio 0.01, car battery charger 0.05. A fuel pump draws 0.03 whenever it still holds fuel, pumping or not. `IsoStackedWasherDryer` draws 0.9 per running half, ten times a standalone washer.
+   6. The power area is a circle of `GeneratorTileRange` (20) tiles, `GeneratorVerticalPowerRange` (3) levels up and down, through walls and across buildings. There is no load limit.
+4. **Generator wear and failure** (`IsoGenerator.update`, `ISActivateGenerator`) [A]:
+   1. Each running hour has a 1 in `ConditionLowerChanceOneIn` chance to lose 1–2 condition: Generator 30, Yellow 36, Blue 24, Old 25. From 100 to 0 takes about 2000, 2400, 1600 and 1650 running hours.
+   2. Starting fails half the time at condition 50 or below. Each running hour backfires (40-tile sound) with chance 1/15 at condition ≤ 40, 1/10 at ≤ 30, 1/5 at ≤ 20.
+   3. At condition ≤ 20, each running hour starts a fire with chance 1/10, otherwise explodes with chance 1/20; either sets condition to 0.
+   4. Repair (`ISFixGenerator`) uses one Electronics Scrap per step for 4 + Electricity/2 condition.
+   5. Running inside a building (square not exterior) marks the whole building toxic. A character inside without protection (`isProtectedFromToxic`) gains fatigue; above 0.8 fatigue the head and upper torso lose health. A generator outside next to an open window is harmless.
+   6. Noise: item `SoundRadius` 20 (Old 25, Blue 23), halved when the generator's square is in a room.
+5. **There's no vanilla extension-cable item.** [I]
+6. **Barrel moveables (`Mov_*Barrel`)** have no `EquipBothHands` and no fluid container. [C]
 
 ## 4. Player
 
